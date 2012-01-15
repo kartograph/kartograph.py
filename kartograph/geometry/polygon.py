@@ -34,7 +34,7 @@ class ComplexPolygon(SolidGeometry):
 	def __init__(self, contours):
 		self.polygon = Polygon(contours[0])
 		self.holes = []
-		for i in range(1, len(contours):
+		for i in range(1, len(contours)):
 			self.holes.append(Polygon(contours[1]))
 
 	def area(self):

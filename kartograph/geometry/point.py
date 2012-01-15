@@ -1,4 +1,6 @@
 
+from geometry import Geometry
+
 
 class Point(Geometry):
 	

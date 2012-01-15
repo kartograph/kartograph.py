@@ -6,10 +6,17 @@ as of version 2.0 kartograph supports multiple import formats
 - GeoJSON ?
 """
 
-import errors
+__all__ = ['LayerSource', 'ShapefileLayer']
 
-class LayerSource:
-	
-	def getGeometry(self, attr, value):
-		raise NotImplementedError()
-		
+from shplayer import ShapefileLayer
+from layersource import LayerSource
+from kartograph.errors import *
+
+
+def handle_layer_source(src):
+	if src[-4:].lower() == ".shp": # shapefile layer
+		src = ShapefileLayer(src)
+	if isinstance(src, LayerSource):
+		 return src
+	else:
+		raise KartographLayerSourceError('don\'t know how to handle "'+src+'"')

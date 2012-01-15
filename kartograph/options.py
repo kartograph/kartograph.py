@@ -7,7 +7,7 @@ helper methods for validating options dictionary
 import os.path, proj, errors
 
 
-Error = errors.OptionParseError
+Error = errors.KartographOptionParseError
 
 def is_str(s):
 	return isinstance(s, (str, unicode))
