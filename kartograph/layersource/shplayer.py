@@ -65,6 +65,32 @@ class ShapefileLayer(LayerSource):
 					
 				shp = self.getShape(i)
 				
-				if shp.shapeType == 1: # point
-					geom = Point
+				if shp.shapeType == 5: # multi-polygon
+					geom = points2polygon(shp)
+		
 
+def points2polygon(shp):
+	parts = shp.parts[:]
+	parts.append(len(shp.points))
+	polys = []
+	
+	for j in range(len(parts)-1):
+		pts = shp.points[parts[j]:parts[j+1]]
+		if j == 0:
+	
+		lats = []
+		lons = []
+		for k in range(0,len(pts)):
+			lats.append(pts[k][1])
+			lons.append(pts[k][0])
+	
+		poly_points = []
+		x, y = proj(lons, lats)
+		for i in range(len(x)):
+			pt = view.project(Point(x[i], y[i]))
+			pt.y = view.height - pt.y
+			poly_points.append(pt)
+		polygon = Polygon(id, poly_points, mode='point')
+		if polygon != None:                                                                                                                                   
+			polys.append(polygon)                                                                                                                              
+	return polys

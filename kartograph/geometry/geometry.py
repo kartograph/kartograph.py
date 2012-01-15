@@ -23,5 +23,11 @@ class SolidGeometry(Geometry):
 		"""
 		raise NotImplementedError('area() is not implemented')
 		
+	def centroid():
+		"""
+		calculates centroid for this geometry
+		"""
+		raise NotImplementedError('centroid() is not implemented')
+	
 	def invalidate(self):
 		self.__area = None

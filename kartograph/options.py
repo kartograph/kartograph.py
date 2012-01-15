@@ -143,14 +143,15 @@ def parse_bounds(opts):
 		except:
 			raise Error('bounds mode points requires array with (lon,lat) tuples')
 	elif mode in ("polygons","polygon"):
+		bounds['mode'] = mode = "polygons"
 		if "layer" not in data or not is_str(data["layer"]):
 			raise Error('you must specify a layer for bounds mode '+mode)
 		if "attribute" not in data or not is_str(data["attribute"]):
 			raise Error('you must specify an attribute for bounds mode '+mode)
-		if "ids" not in data:
-			raise Error('you must specify a list of ids for bounds mode '+mode)
-		if is_str(data["ids"]):
-			data["ids"] = [data["ids"]]
+		if "values" not in data:
+			raise Error('you must specify a list of values for bounds mode '+mode)
+		if is_str(data["values"]):
+			data["values"] = [data["values"]]
 		if "min_area" in data:
 			try:
 				data["min_area"] = float(data["min_area"])
