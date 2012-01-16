@@ -26,15 +26,21 @@ class Kartograph(object):
 		bounds_poly = self.get_bounds(opts,proj)
 		bbox = bounds_poly.bbox()
 		view = self.get_view(opts, bbox)
-		view_bounds = bounds_poly.project_view(view)
+		view_poly = bounds_poly.project_view(view)
+		
+		
 		
 		svg = self.init_svg_canvas(opts, proj, view, bbox)
 		
 		for layer in opts['layers']:
 			features = self.get_features(layer, proj, view, opts)
+			
 			g = SVG('g', id=layer['id'])
+			
 			for feat in features:
+				feat.crop_to_view(view_poly)
 				g.append(feat.to_svg(opts['export']['round']))
+			
 			svg.append(g)
 		
 		svg.firefox()
@@ -124,6 +130,8 @@ class Kartograph(object):
 			for feature in features:
 				fbbox = feature.geom.project(proj).bbox(data["min_area"])
 				bbox.join(fbbox)
+				
+		bbox.inflate(bbox.width * bnds['padding'])
 		
 		return bbox_to_polygon(bbox)
 	
@@ -154,7 +162,6 @@ class Kartograph(object):
 		w = exp["width"]
 		h = exp["height"]
 		ratio = exp["ratio"]
-		padding = exp["padding"]
 		
 		if ratio == "auto":
 			ratio = bbox.width / float(bbox.height)
@@ -164,7 +171,7 @@ class Kartograph(object):
 		elif w == "auto":
 			w = h * ratio
 	
-		return View(bbox, w, h-1, padding=padding)
+		return View(bbox, w, h-1)
 		
 	
 	def get_features(self, layer, proj, view, opts):
@@ -224,7 +231,7 @@ class Kartograph(object):
 	
 		meta = SVG('metadata')
 		views = SVG('views')
-		view = SVG('view', padding=str(opts['export']['padding']), w=w, h=h)
+		view = SVG('view', padding=str(opts['bounds']['padding']), w=w, h=h)
 		proj_ = proj.toXML()
 		bbox = SVG('bbox', x=round(bbox.left,2), y=round(bbox.top,2), w=round(bbox.width,2), h=round(bbox.height,2))
 		

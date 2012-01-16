@@ -56,8 +56,9 @@ class ShapefileLayer(LayerSource):
 			raise errors.ShapefileAttributesError('could not find an attribute named "'+attr+'" in shapefile '+self.shpSrc+'\n\navailable attributes are:\n'+' '.join(self.attributes))
 		res = []
 		for i in range(0,len(self.recs)):
-			val = self.recs[i][self.attrIndex[attr]]
-			if filter(val) or filter is None:
+			if attr is not None:
+				val = self.recs[i][self.attrIndex[attr]]
+			if filter is None or filter(val):
 				props = {}
 				for j in range(len(self.attributes)):
 					attr = self.attributes[j]

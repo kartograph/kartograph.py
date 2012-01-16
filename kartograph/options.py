@@ -142,6 +142,8 @@ def parse_bounds(opts):
 		bounds['mode'] = 'bbox'
 	mode = bounds['mode']
 	data = bounds['data']
+	if "padding" not in bounds:
+		bounds["padding"] = 0
 	if mode == "bbox":
 		try:
 			if len(data) == 4:
@@ -198,8 +200,6 @@ def parse_export(opts):
 		
 	if "ratio" not in exp:
 		exp["ratio"] = "auto"		
-	if "padding" not in exp:
-		exp["padding"] = 0
 	if "round" not in exp:
 		exp["round"] = False
 	else:

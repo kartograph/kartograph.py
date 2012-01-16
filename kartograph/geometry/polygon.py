@@ -110,7 +110,9 @@ class MultiPolygon(SolidGeometry):
 		in_contours = self.contours
 		out_contours = []
 		for pts in in_contours:
-			out_contours += proj.plot(pts)
+			pcont = proj.plot(pts)
+			if pcont != None:
+				out_contours += pcont
 		out_poly = MultiPolygon(out_contours)
 		return out_poly
 		
@@ -133,6 +135,14 @@ class MultiPolygon(SolidGeometry):
 		return out_poly	
 	
 	
+	def crop_to_view(self, view_bounds):
+		poly = self.poly & view_bounds.poly
+		contours = []
+		for pts in poly:
+			contours.append(pts)
+		return MultiPolygon(contours)
+		
+		
 	def to_svg(self, round):
 		"""
 		constructs a svg representation of this polygon

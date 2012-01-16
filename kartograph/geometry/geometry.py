@@ -23,6 +23,8 @@ class Geometry:
 	def to_svg(self, round=0):
 		raise NotImplementedError('toSVG() is not implemented')
 		
+	def crop_to_view(self, view_bounds):
+		raise NotImplementedError('toSVG() is not implemented')
 
 
 	

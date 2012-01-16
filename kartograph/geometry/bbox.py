@@ -47,4 +47,16 @@ class BBox(object):
 		self.update(Point(bbox.left, bbox.top))
 		self.update(Point(bbox.right, bbox.bottom))
 		
-	
+	def inflate(self, amount):
+		self.xmin -= amount
+		self.ymin -= amount
+		self.xmax += amount
+		self.ymax += amount
+		
+		self.left = self.xmin
+		self.top = self.ymin
+		self.right = self.xmax
+		self.bottom = self.ymax
+		self.width = self.xmax - self.xmin
+		self.height = self.ymax - self.ymin
+		
