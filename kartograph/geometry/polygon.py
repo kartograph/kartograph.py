@@ -142,10 +142,6 @@ class MultiPolygon(SolidGeometry):
 	def substract_geom(self, geom):
 		if not isinstance(geom, MultiPolygon):
 			raise NotImplementedError('substraction is allowed for polygons only, yet')
-		import Polygon.IO
-		Polygon.IO.writeSVG('self-poly.svg', [self.poly])
-		Polygon.IO.writeSVG('geom-poly.svg', [geom.poly])
-			
 		poly = self.poly - geom.poly
 		return MultiPolygon.fromPoly(poly)
 		

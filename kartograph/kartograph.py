@@ -44,6 +44,7 @@ class Kartograph(object):
 		# simplify features
 		
 		self.crop_layers_to_view(layers, layerFeatures, view_poly)
+		self.crop_layers(layers, layerOpts, layerFeatures)
 		self.substract_layers(layers, layerOpts, layerFeatures)
 		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
 		
@@ -267,14 +268,33 @@ class Kartograph(object):
 		"""
 		cuts the layer features to the map view
 		"""
-		out = []
 		for id in layers:
+			out = []
 			for feat in layerFeatures[id]:
 				feat.crop_to(view_poly)
-				#if not feat.is_empty():
-				#	out.append(feat)
-			#layerFeatures[id] = out
-		
+				if not feat.is_empty():
+					out.append(feat)
+			layerFeatures[id] = out
+
+
+	def crop_layers(self, layers, layerOpts, layerFeatures):
+		"""
+		handles crop-to
+		"""
+		for id in layers:
+			if layerOpts[id]['crop-to'] is not False:
+				cropped_features = []
+				for tocrop in layerFeatures[id]:
+					cbbox = tocrop.geom.bbox()
+					crop_at_layer = layerOpts[id]['crop-to']
+					if crop_at_layer not in layers:
+						raise KartographError('you want to substract from layer "%s" which cannot be found'%crop_at_layer)
+					for crop_at in layerFeatures[crop_at_layer]:
+						if crop_at.geom.bbox().intersects(cbbox):
+							tocrop.crop_to(crop_at.geom)
+							cropped_features.append(tocrop)
+				layerFeatures[id] = cropped_features					
+			
 		
 	def substract_layers(self, layers, layerOpts, layerFeatures):
 		"""
@@ -290,7 +310,6 @@ class Kartograph(object):
 						for sfeat in layerFeatures[subid]:
 							if sfeat.geom.bbox().intersects(cbbox):
 								sfeat.substract_geom(feat.geom)
-								
 				layerFeatures[id] = []
 				
 				
