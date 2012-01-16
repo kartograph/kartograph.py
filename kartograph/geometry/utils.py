@@ -18,3 +18,10 @@ def is_clockwise(pts):
 			x2, y2 = pts[i+1]
 		s += (x2-x1) * (y2+y1)
 	return s >= 0
+	
+	
+def bbox_to_polygon(bbox):
+	from polygon import MultiPolygon
+	s = bbox
+	poly = MultiPolygon([[(s.left,s.bottom),(s.left,s.top),(s.right,s.top),(s.right,s.bottom)]])
+	return poly	

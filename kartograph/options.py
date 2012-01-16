@@ -29,7 +29,11 @@ def parse_proj(opts):
 	"""
 	if 'proj' not in opts: opts['proj'] = {}
 	prj = opts['proj']
-	if 'id' not in prj: prj['id'] = 'laea'
+	if 'id' not in prj: 
+		if 'bounds' not in opts:
+			prj['id'] = 'robinson'
+		else:
+			prj['id'] = 'laea'
 	if prj['id'] not in proj.projections:
 		raise Error('unknown projection')
 	prjClass = proj.projections[prj['id']]
@@ -65,6 +69,7 @@ def parse_layer_attributes(layer):
 			attrs.append({'src':attr, 'tgt': attr })
 		else:
 			attrs.append(attr)
+	layer['attributes'] = attrs
 
 
 def parse_layer_filter(layer):
@@ -157,6 +162,8 @@ def parse_bounds(opts):
 				data["min_area"] = float(data["min_area"])
 			except:
 				raise Error('min_area must be an integer or float')
+		else:
+			data['min_area'] = 0
 				
 
 def parse_export(opts):
@@ -173,3 +180,6 @@ def parse_export(opts):
 		
 	if "ratio" not in exp:
 		exp["ratio"] = "auto"		
+	if "padding" not in exp:
+		exp["padding"] = 0
+		

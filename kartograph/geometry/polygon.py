@@ -1,11 +1,14 @@
 
 from geometry import *
-
+from bbox import BBox
+import utils
 
 
 class Polygon(SolidGeometry):
 
 	def __init__(self, points):
+		self.__area = None
+		self.__centroid = None
 		self.points = points
 
 	def area(self):
@@ -24,42 +27,109 @@ class Polygon(SolidGeometry):
 		self.invalidate()
 		self.points = proj.plot(self.points)
 
-
-
-class ComplexPolygon(SolidGeometry):
-	"""
-	A simple polygon with non intersecting holes
-	the first contour is the polygon and every following contour is a hole
-	"""
-	def __init__(self, contours):
-		self.polygon = Polygon(contours[0])
-		self.holes = []
-		for i in range(1, len(contours)):
-			self.holes.append(Polygon(contours[1]))
-
-	def area(self):
-		if self.__area is not None:
-			return self.__area
-		a = self.polygon.area()
-		for hole in self.holes:
-			a -= hole.area()
-		self.__area = a
-		return self.__area
 		
 		
 class MultiPolygon(SolidGeometry):
 	"""
 	Several complex polygons
 	"""
-	def __init__(self, polygons):
-		self.polygons = polygons
+	def __init__(self, contours):
+		self.__area = None
+		self.__areas = None
+		self.__centroid = None
+		self.contours = contours
+		from Polygon import Polygon as GPCPoly
+		poly = GPCPoly()
+		for pts in contours:
+			ishole = utils.is_clockwise(pts)
+			poly.addContour(pts, ishole)
+		self.poly = poly
 
 	def area(self):
 		if self.__area is not None:
 			return self.__area
-		a = 0
-		for poly in self.polygons:
-			a += poly.area()
-		self.__area = a
+		self.__area = self.poly.area()
 		return self.__area
+	
+	
+	def areas(self):
+		"""
+		returns array of areas of all sub-polygons
+		areas of holes are < 0
+		"""
+		if self.__areas is not None:
+			return self.__areas
+		a = []
+		for i in range(len(self.poly)):
+			t = self.poly.area(i)
+			if self.poly.isHole(i): t *= -1
+			a.append(t)
+		self.__areas = a
+		return a
+	
+	
+	def centroid(self):
+		"""
+		returns the center of gravity for this polygon
+		"""
+		if self.__centroid is not None:
+			return self.__centroid
+		self.__centroid = self.poly.center()
+		return self.__centroid
+	
+	
+	def bbox(self, min_area = 0):
+		"""
+		smart bounding box
+		"""
+		bb = []
+		bbox = BBox()
+		if min_area == 0:
+			bb.append(self.poly.boundingBox())
+		else:
+			areas = self.areas()
+			max_a = max(areas)
+			for i in range(len(self.poly)):
+				if self.poly.isHole(i): continue
+				a = areas[i]
+				if a < max_a * min_area: continue
+				bb.append(self.poly.boundingBox(i))
+		for b in bb:
+			bbox.update((b[0],b[2]))
+			bbox.update((b[1],b[2]))
+			bbox.update((b[0],b[3]))
+			bbox.update((b[1],b[3]))
+		return bbox
+	
+	
+	def project(self, proj):
+		"""
+		returns a new multi-polygon whose contours are
+		projected to a map projection
+		"""
+		in_contours = self.contours
+		out_contours = []
+		for pts in in_contours:
+			out_contours += proj.plot(pts)
+		out_poly = MultiPolygon(out_contours)
+		return out_poly
 		
+		
+	def project_view(self, view):
+		"""
+		returns a new multi-polygon whose contours are 
+		projected to a new view
+		"""
+		in_poly = self
+		contours = in_poly.contours
+		out = []
+		for contour in contours:
+			out_c = []
+			for pt in contour:
+				pt = view.project(pt)
+				out_c.append(pt)
+			out.append(out_c)
+		out_poly = MultiPolygon(out)
+		return out_poly	
+
+	

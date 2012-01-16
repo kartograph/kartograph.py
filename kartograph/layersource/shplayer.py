@@ -1,7 +1,6 @@
 
 from layersource import LayerSource
 
-
 class ShapefileLayer(LayerSource):
 	"""
 	this class handles shapefile layers
@@ -18,10 +17,10 @@ class ShapefileLayer(LayerSource):
 		self.sr = shapefile.Reader(src)
 		self.recs = []
 		self.shapes = {}
-		self.loadRecords()
+		self.load_records()
 	
 	
-	def loadRecords(self):
+	def load_records(self):
 		"""
 		load shapefile records into memory. note that only the records are loaded and not the shapes.
 		"""
@@ -36,7 +35,7 @@ class ShapefileLayer(LayerSource):
 			i += 0
 			
 	
-	def getShape(self, i):
+	def get_shape(self, i):
 		"""
 		returns a shape of this shapefile. if requested for the first time, the shape is loaded from shapefile (slow)
 		"""
@@ -47,50 +46,44 @@ class ShapefileLayer(LayerSource):
 		return shp
 		
 	
-	def getFeatures(self, attr, value):
+	def get_features(self, attr=None, filter=None):
 		"""
 		returns a list of features matching to the attr -> value pair
 		"""
-		if attr not in self.attrIndex:
+		from kartograph.geometry import Feature
+		
+		if attr is not None and attr not in self.attrIndex:
 			raise errors.ShapefileAttributesError('could not find an attribute named "'+attr+'" in shapefile '+self.shpSrc+'\n\navailable attributes are:\n'+' '.join(self.attributes))
 		res = []
 		for i in range(0,len(self.recs)):
 			val = self.recs[i][self.attrIndex[attr]]
-			if val == value:
+			if filter(val) or filter is None:
 				props = {}
 				for j in range(len(self.attributes)):
 					attr = self.attributes[j]
 					val = self.recs[i][j]
 					props[attr] = val
 					
-				shp = self.getShape(i)
+				shp = self.get_shape(i)
 				
 				if shp.shapeType == 5: # multi-polygon
 					geom = points2polygon(shp)
+					
+				feature = Feature(geom, props)
+				res.append(feature)
+		return res
 		
 
 def points2polygon(shp):
+	"""
+	converts a shapefile polygon to geometry.MultiPolygon
+	"""
+	from kartograph.geometry import MultiPolygon
 	parts = shp.parts[:]
 	parts.append(len(shp.points))
-	polys = []
-	
+	contours = []
 	for j in range(len(parts)-1):
 		pts = shp.points[parts[j]:parts[j+1]]
-		if j == 0:
-	
-		lats = []
-		lons = []
-		for k in range(0,len(pts)):
-			lats.append(pts[k][1])
-			lons.append(pts[k][0])
-	
-		poly_points = []
-		x, y = proj(lons, lats)
-		for i in range(len(x)):
-			pt = view.project(Point(x[i], y[i]))
-			pt.y = view.height - pt.y
-			poly_points.append(pt)
-		polygon = Polygon(id, poly_points, mode='point')
-		if polygon != None:                                                                                                                                   
-			polys.append(polygon)                                                                                                                              
-	return polys
+		contours.append(pts)
+	poly = MultiPolygon(contours)	
+	return poly

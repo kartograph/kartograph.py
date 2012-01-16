@@ -1,10 +1,12 @@
 
+from point import Point
 
 class BBox(object):
 	"""
 	2D bounding box
 	"""
 	def __init__(self, width=None, height=None, left=0, top=0):
+		import sys
 		if width == None:
 			self.xmin = sys.maxint
 			self.xmax = sys.maxint*-1
@@ -39,9 +41,10 @@ class BBox(object):
 		return bbox.left < self.right and bbox.right > self.left and bbox.top < self.bottom and bbox.bottom > self.top
 		
 	def __str__(self):
-		return '[%.2f, %.2f, %.2f, %.2f]' % (self.left, self.top, self.width, self.height)
+		return '[%.2f, %.2f, %.2f, %.2f]' % (self.left, self.top, self.right, self.bottom)
 		
 	def join(self, bbox):
 		self.update(Point(bbox.left, bbox.top))
 		self.update(Point(bbox.right, bbox.bottom))
 		
+	

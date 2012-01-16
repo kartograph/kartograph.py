@@ -11,6 +11,11 @@ class Geometry:
 		"""
 		raise NotImplementedError('project() is not implemented')
 	
+	def bbox(self):
+		raise NotImplementedError('bbox() is not implemented')
+		
+	def project_view(self, view):
+		raise NotImplementedError('project_view() is not implemented')
 
 	
 class SolidGeometry(Geometry):
