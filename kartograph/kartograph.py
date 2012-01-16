@@ -119,7 +119,7 @@ class Kartograph(object):
 		
 		if mode == "bbox": # catch special case bbox
 			lon0,lat0,lon1,lat1 = data # lon0,lat0,lon1,lat1
-			pts = [(lon0,lat0),(lon0,lat1),(lon1,lat0),(lon1,lat1)]
+			pts = [(lon0,lat0),(lon1,lat0),(lon1,lat1),(lon0,lat1)]
 			contours = proj.plot(pts)
 			return MultiPolygon(contours)
 		
