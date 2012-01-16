@@ -75,6 +75,8 @@ def parse_layers(opts):
 		parse_layer_filter(layer)
 		parse_layer_join(layer)
 		parse_layer_simplify(layer)	
+		parse_layer_substract(layer)
+		parse_layer_cropping(layer)
 
 			
 def parse_layer_attributes(layer):
@@ -130,6 +132,19 @@ def parse_layer_simplify(layer):
 	except ValueError:
 		raise Error('could not convert simplification amount to float')
 
+
+def parse_layer_substract(layer):
+	if 'substract-from' not in layer:
+		layer['substract-from'] = False
+		return
+	if isinstance(layer['substract-from'], (str,unicode)):
+		layer['substract-from'] = [layer['substract-from']]
+
+
+def parse_layer_cropping(layer):
+	if 'crop-to' not in layer:
+		layer['crop-to'] = False
+		return
 		
 def parse_bounds(opts):
 	if 'bounds' not in opts: 
