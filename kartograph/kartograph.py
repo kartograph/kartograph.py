@@ -28,8 +28,6 @@ class Kartograph(object):
 		view = self.get_view(opts, bbox)
 		view_poly = bounds_poly.project_view(view)
 		
-		
-		
 		svg = self.init_svg_canvas(opts, proj, view, bbox)
 		
 		for layer in opts['layers']:
@@ -39,9 +37,9 @@ class Kartograph(object):
 			
 			for feat in features:
 				feat.crop_to_view(view_poly)
-				g.append(feat.to_svg(opts['export']['round']))
-			
+				g.append(feat.to_svg(opts['export']['round']))			
 			svg.append(g)
+
 		
 		svg.firefox()
 		
@@ -127,6 +125,7 @@ class Kartograph(object):
 				
 		if mode == "polygons":
 			features = self.get_bounds_polygons(opts)
+			print features
 			for feature in features:
 				fbbox = feature.geom.project(proj).bbox(data["min_area"])
 				bbox.join(fbbox)
@@ -151,6 +150,7 @@ class Kartograph(object):
 		attr = data['attribute']
 		values = data['values']
 		features = layer.get_features(attr, lambda id: id in values)
+		
 		return features
 
 
@@ -187,8 +187,11 @@ class Kartograph(object):
 				attr = None
 			else:
 				attr = layer['filter']['attribute']
-				if 'equals' in layer['filter']:
+				incl = layer['filter']['type'] == 'include'
+				if incl and 'equals' in layer['filter']:
 					filter = lambda id: id in layer['filter']['equals']
+				elif not incl and 'equals' in layer['filter']:
+					filter = lambda id: id not in layer['filter']['equals']
 				elif 'greater-than' in layer['filter']:
 					filter = lambda v: v >= layer['filter']['greater-than']
 				elif 'less-than' in layer['filter']:

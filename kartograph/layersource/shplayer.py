@@ -1,5 +1,6 @@
 
 from layersource import LayerSource
+from kartograph import errors
 
 class ShapefileLayer(LayerSource):
 	"""
@@ -32,7 +33,7 @@ class ShapefileLayer(LayerSource):
 		self.attrIndex = {}
 		for attr in self.attributes:
 			self.attrIndex[attr] = i
-			i += 0
+			i += 1
 			
 	
 	def get_shape(self, i):
@@ -51,7 +52,6 @@ class ShapefileLayer(LayerSource):
 		returns a list of features matching to the attr -> value pair
 		"""
 		from kartograph.geometry import Feature
-		
 		if attr is not None and attr not in self.attrIndex:
 			raise errors.ShapefileAttributesError('could not find an attribute named "'+attr+'" in shapefile '+self.shpSrc+'\n\navailable attributes are:\n'+' '.join(self.attributes))
 		res = []
@@ -61,9 +61,7 @@ class ShapefileLayer(LayerSource):
 			if filter is None or filter(val):
 				props = {}
 				for j in range(len(self.attributes)):
-					attr = self.attributes[j]
-					val = self.recs[i][j]
-					props[attr] = val
+					props[self.attributes[j]] = self.recs[i][j]
 					
 				shp = self.get_shape(i)
 				
@@ -72,6 +70,9 @@ class ShapefileLayer(LayerSource):
 					
 				feature = Feature(geom, props)
 				res.append(feature)
+			
+				
+				
 		return res
 		
 
