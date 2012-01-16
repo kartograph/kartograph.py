@@ -21,11 +21,16 @@ class Geometry:
 		raise NotImplementedError('project_view() is not implemented')
 		
 	def to_svg(self, round=0):
-		raise NotImplementedError('toSVG() is not implemented')
+		raise NotImplementedError('to_svg() is not implemented')
 		
-	def crop_to_view(self, view_bounds):
-		raise NotImplementedError('toSVG() is not implemented')
+	def crop_to(self, view_bounds):
+		raise NotImplementedError('crop_to() is not implemented')
 
+	def substract_geom(self, geom):
+		raise NotImplementedError('substract_geom() is not implemented yet')
+		
+	def is_emtpy(self):
+		return False
 
 	
 class SolidGeometry(Geometry):

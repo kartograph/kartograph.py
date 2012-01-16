@@ -38,6 +38,9 @@ class BBox(object):
 		self.height = self.ymax - self.ymin
 		
 	def intersects(self, bbox):
+		"""
+		returns true if two bounding boxes overlap
+		"""
 		return bbox.left < self.right and bbox.right > self.left and bbox.top < self.bottom and bbox.bottom > self.top
 		
 	def __str__(self):

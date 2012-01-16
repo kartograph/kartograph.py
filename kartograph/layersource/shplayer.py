@@ -61,7 +61,10 @@ class ShapefileLayer(LayerSource):
 			if filter is None or filter(val):
 				props = {}
 				for j in range(len(self.attributes)):
-					props[self.attributes[j]] = self.recs[i][j]
+					val = self.recs[i][j]
+					if isinstance(val, (str,unicode)):
+						val = val.strip()
+					props[self.attributes[j]] = val
 					
 				shp = self.get_shape(i)
 				

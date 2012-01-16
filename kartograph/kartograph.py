@@ -17,8 +17,6 @@ class Kartograph(object):
 		"""
 		generates svg map
 		"""
-		from svgfig import SVG
-		
 		parse_options(opts)
 		self.prepare_layers(opts)
 		
@@ -30,16 +28,24 @@ class Kartograph(object):
 		
 		svg = self.init_svg_canvas(opts, proj, view, bbox)
 		
+		layers = []
+		layerOpts = {}
+		layerFeatures = {}
+		
+		# get features
 		for layer in opts['layers']:
-			features = self.get_features(layer, proj, view, opts)
+			id = layer['id']
+			layerOpts[id] = layer
+			layers.append(id)
+			features = self.get_features(layer, proj, view, opts)	
+			layerFeatures[id] = features
 			
-			g = SVG('g', id=layer['id'])
 			
-			for feat in features:
-				feat.crop_to_view(view_poly)
-				g.append(feat.to_svg(opts['export']['round']))			
-			svg.append(g)
-
+		# simplify features
+		
+		self.crop_layers_to_view(layers, layerFeatures, view_poly)
+		self.substract_layers(layers, layerOpts, layerFeatures)
+		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
 		
 		svg.firefox()
 		
@@ -125,7 +131,6 @@ class Kartograph(object):
 				
 		if mode == "polygons":
 			features = self.get_bounds_polygons(opts)
-			print features
 			for feature in features:
 				fbbox = feature.geom.project(proj).bbox(data["min_area"])
 				bbox.join(fbbox)
@@ -192,10 +197,14 @@ class Kartograph(object):
 					filter = lambda id: id in layer['filter']['equals']
 				elif not incl and 'equals' in layer['filter']:
 					filter = lambda id: id not in layer['filter']['equals']
-				elif 'greater-than' in layer['filter']:
-					filter = lambda v: v >= layer['filter']['greater-than']
-				elif 'less-than' in layer['filter']:
-					filter = lambda v: v <= layer['filter']['less-than']
+				elif incl and 'greater-than' in layer['filter']:
+					filter = lambda v: v > layer['filter']['greater-than']
+				elif not incl and 'greater-than' in layer['filter']:
+					filter = lambda v: v <= layer['filter']['greater-than']
+				elif incl and 'less-than' in layer['filter']:
+					filter = lambda v: v < layer['filter']['less-than']
+				elif not incl and 'less-than' in layer['filter']:
+					filter = lambda v: v >= layer['filter']['less-than']
 			features = src.get_features(attr, filter)
 		
 		elif 'special' in layer: # special layers need special treatment
@@ -223,7 +232,7 @@ class Kartograph(object):
 		w = view.width
 		h = view.height+2
 		
-		svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#444; fill:white;')
+		svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:1pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
 	
 		css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
 		
@@ -252,4 +261,52 @@ class Kartograph(object):
 		svg.append(meta)
 		
 		return svg
+	
+	
+	def crop_layers_to_view(self, layers, layerFeatures, view_poly):
+		"""
+		cuts the layer features to the map view
+		"""
+		out = []
+		for id in layers:
+			for feat in layerFeatures[id]:
+				feat.crop_to(view_poly)
+				#if not feat.is_empty():
+				#	out.append(feat)
+			#layerFeatures[id] = out
+		
+		
+	def substract_layers(self, layers, layerOpts, layerFeatures):
+		"""
+		handles substract-from 
+		"""
+		for id in layers:
+			if layerOpts[id]['substract-from'] is not False:
+				for feat in layerFeatures[id]:
+					cbbox = feat.geom.bbox()
+					for subid in layerOpts[id]['substract-from']:
+						if subid not in layers:
+							raise KartographError('you want to substract from layer "%s" which cannot be found'%subid)
+						for sfeat in layerFeatures[subid]:
+							if sfeat.geom.bbox().intersects(cbbox):
+								sfeat.substract_geom(feat.geom)
+								
+				layerFeatures[id] = []
+				
+				
+	
+	def store_layers(self, layers, layerOpts, layerFeatures, svg, opts):
+		"""
+		store features in svg
+		"""
+		from svgfig import SVG
+		
+		for id in layers:
+			print id
+			if len(layerFeatures[id]) == 0: continue # ignore empty layers
+			g = SVG('g', id=id)
+			for feat in layerFeatures[id]:
+				g.append(feat.to_svg(opts['export']['round'], layerOpts[id]['attributes']))			
+			svg.append(g)
+							
 		

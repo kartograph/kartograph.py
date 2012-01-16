@@ -1,4 +1,5 @@
 
+from kartograph import errors
 
 class Feature:
 	"""
@@ -12,15 +13,25 @@ class Feature:
 		return str(self.props)
 		
 	def project(self, proj):
-		self.geometry = self.geometry.project(proj)
+		self.geometry = self.geom = self.geometry.project(proj)
 		
 	def project_view(self, view):
-		self.geometry = self.geometry.project_view(view)
+		self.geometry = self.geom = self.geometry.project_view(view)
 	
-	def crop_to_view(self, view_bounds):
-		self.geometry = self.geometry.crop_to_view(view_bounds)
+	def crop_to(self, view_bounds):
+		self.geometry = self.geom = self.geometry.crop_to(view_bounds)
+		
+	def substract_geom(self, geom):
+		self.geometry = self.geom = self.geometry.substract_geom(geom)
 		
 	def to_svg(self, round, attributes=[]):
 		svg = self.geometry.to_svg(round)
 		# todo: add data attribtes
+		for cfg in attributes:
+			if cfg['src'] not in self.props:
+				raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
+			svg['data-'+cfg['tgt']] = self.props[cfg['src']]
 		return svg
+		
+	def is_empty(self):
+		return self.geom.is_empty()

@@ -62,4 +62,8 @@ class Line(Geometry):
 		path = SVG('path', d=path_str)
 		return path
 		
+	
+	def is_empty(self):
+		return len(self.points) == 0
+		
 		

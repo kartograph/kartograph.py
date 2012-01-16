@@ -112,9 +112,8 @@ class MultiPolygon(SolidGeometry):
 		for pts in in_contours:
 			pcont = proj.plot(pts)
 			if pcont != None:
-				out_contours += pcont
-		out_poly = MultiPolygon(out_contours)
-		return out_poly
+				out_contours += pcont 
+		return MultiPolygon(out_contours)
 		
 		
 	def project_view(self, view):
@@ -122,8 +121,7 @@ class MultiPolygon(SolidGeometry):
 		returns a new multi-polygon whose contours are 
 		projected to a new view
 		"""
-		in_poly = self
-		contours = in_poly.contours
+		contours = self.contours
 		out = []
 		for contour in contours:
 			out_c = []
@@ -131,17 +129,35 @@ class MultiPolygon(SolidGeometry):
 				pt = view.project(pt)
 				out_c.append(pt)
 			out.append(out_c)
+		self.contours = out
 		out_poly = MultiPolygon(out)
 		return out_poly	
 	
 	
-	def crop_to_view(self, view_bounds):
+	def crop_to(self, view_bounds):
 		poly = self.poly & view_bounds.poly
+		return MultiPolygon.fromPoly(poly)
+	
+	
+	def substract_geom(self, geom):
+		if not isinstance(geom, MultiPolygon):
+			raise NotImplementedError('substraction is allowed for polygons only, yet')
+		import Polygon.IO
+		Polygon.IO.writeSVG('self-poly.svg', [self.poly])
+		Polygon.IO.writeSVG('geom-poly.svg', [geom.poly])
+			
+		poly = self.poly - geom.poly
+		return MultiPolygon.fromPoly(poly)
+		
+		
+	@staticmethod
+	def fromPoly(poly):
 		contours = []
-		for pts in poly:
+		for i in range(len(poly)):
+			pts = poly.contour(i)
 			contours.append(pts)
 		return MultiPolygon(contours)
-		
+	
 		
 	def to_svg(self, round):
 		"""
@@ -153,7 +169,7 @@ class MultiPolygon(SolidGeometry):
 		else: 
 			fmt = '%.'+str(round)+'f'
 			fmt = fmt+','+fmt
-			
+		
 		for pts in self.contours:
 			cont_str = ""
 			for pt in pts:
@@ -166,4 +182,7 @@ class MultiPolygon(SolidGeometry):
 		path = SVG('path', d=path_str)
 		return path
 
+	
+	def is_empty(self):
+		return len(self.contours) == 0
 	
