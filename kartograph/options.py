@@ -45,14 +45,32 @@ def parse_proj(opts):
 def parse_layers(opts):
 	if 'layers' not in opts: opts['layers'] = []
 	l_id = 0
+	g_id = 0
+	s_id = 0
 	for layer in opts['layers']:
-		if 'src' not in layer:
+		if 'src' not in layer and 'special' not in layer:
 			raise Error('you need to define the source for your layers')
-		if not os.path.exists(layer['src']):
-			raise Error('layer source not found: '+layer['src'])
-		if 'id' not in layer:
-			layer['id'] = 'layer_'+str(l_id)
-			l_id += 1
+		if 'src' in layer:
+			if not os.path.exists(layer['src']):
+				raise Error('layer source not found: '+layer['src'])
+			if 'id' not in layer:
+				layer['id'] = 'layer_'+str(l_id)
+				l_id += 1
+		elif 'special' in layer:
+			if layer['special'] == 'graticule':
+				if 'id' not in layer:
+					layer['id'] = 'graticule_'+str(g_id)
+					g_id += 1
+				if 'step' not in layer:
+					layer['step'] = [15,15]
+				elif isinstance(layer['step'], (int,float)):
+					layer['step'] = [layer['step'],layer['step']]
+			elif layer['special'] == 'sea':
+				if 'id' not in layer:
+					layer['id'] = 'sea_'+str(s_id)
+					s_id += 1
+				
+					
 		parse_layer_attributes(layer)
 		parse_layer_filter(layer)
 		parse_layer_join(layer)
@@ -182,4 +200,8 @@ def parse_export(opts):
 		exp["ratio"] = "auto"		
 	if "padding" not in exp:
 		exp["padding"] = 0
+	if "round" not in exp:
+		exp["round"] = False
+	else:
+		exp["round"] = int(exp["round"])
 		

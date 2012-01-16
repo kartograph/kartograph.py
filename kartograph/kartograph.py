@@ -12,10 +12,13 @@ class Kartograph(object):
 	def __init__(self):
 		pass
 		
+		
 	def generate(self, opts, outfile=None):
 		"""
 		generates svg map
 		"""
+		from svgfig import SVG
+		
 		parse_options(opts)
 		self.prepare_layers(opts)
 		
@@ -25,12 +28,16 @@ class Kartograph(object):
 		view = self.get_view(opts, bbox)
 		view_bounds = bounds_poly.project_view(view)
 		
+		svg = self.init_svg_canvas(opts, proj, view, bbox)
+		
 		for layer in opts['layers']:
-			features = self.get_features(layer, proj, view)
-			
-		print features
+			features = self.get_features(layer, proj, view, opts)
+			g = SVG('g', id=layer['id'])
+			for feat in features:
+				g.append(feat.to_svg(opts['export']['round']))
+			svg.append(g)
 		
-		
+		svg.firefox()
 		
 	
 	def prepare_layers(self, opts):
@@ -40,7 +47,7 @@ class Kartograph(object):
 		self.layers = layers = {}
 		for layer in opts['layers']:
 			id = layer['id']
-			src = handle_layer_source(layer['src'])
+			src = handle_layer_source(layer)
 			layers[id] = src
 
 	
@@ -160,29 +167,79 @@ class Kartograph(object):
 		return View(bbox, w, h-1, padding=padding)
 		
 	
-	def get_features(self, layer, proj, view):
+	def get_features(self, layer, proj, view, opts):
 		"""
 		returns a list of projected and filtered features of a layer
 		"""
 		id = layer['id']
 		src = self.layers[id]
 		
-		if layer['filter'] is False: 
-			filter = None
-			attr = None
-		else:
-			attr = layer['filter']['attribute']
-			if 'equals' in layer['filter']:
-				filter = lambda id: id in layer['filter']['equals']
-			elif 'greater-than' in layer['filter']:
-				filter = lambda v: v >= layer['filter']['greater-than']
-			elif 'less-than' in layer['filter']:
-				filter = lambda v: v <= layer['filter']['less-than']
+		if 'src' in layer: # regular geodata layer
+			if layer['filter'] is False: 
+				filter = None
+				attr = None
+			else:
+				attr = layer['filter']['attribute']
+				if 'equals' in layer['filter']:
+					filter = lambda id: id in layer['filter']['equals']
+				elif 'greater-than' in layer['filter']:
+					filter = lambda v: v >= layer['filter']['greater-than']
+				elif 'less-than' in layer['filter']:
+					filter = lambda v: v <= layer['filter']['less-than']
+			features = src.get_features(attr, filter)
 		
+		elif 'special' in layer: # special layers need special treatment
+			if layer['special'] == "graticule":
+				bbox = [-180,-90,180,90]
+				if opts['bounds']['mode'] == "bbox":
+					bbox = opts['bounds']['data']
+				step = layer['step']
+				features = src.get_features(step, proj, bbox)
+				
 		
-		features = src.get_features(attr, filter)
 		for feature in features:
 			feature.project(proj)
 			feature.project_view(view)
 			
 		return features
+	
+	
+	def init_svg_canvas(self, opts, proj, view, bbox):
+		"""
+		prepare a blank new svg file
+		"""
+		from svgfig import canvas, SVG
+		
+		w = view.width
+		h = view.height+2
+		
+		svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#444; fill:white;')
+	
+		css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
+		
+		#if options.graticule:
+		#	css += '#graticule path { fill: none; stroke-width:0.25pt;  } #graticule .equator { stroke-width: 0.5pt } '
+	
+		svg.append(SVG('defs', SVG('style', css, type='text/css')))
+	
+		meta = SVG('metadata')
+		views = SVG('views')
+		view = SVG('view', padding=str(opts['export']['padding']), w=w, h=h)
+		proj_ = proj.toXML()
+		bbox = SVG('bbox', x=round(bbox.left,2), y=round(bbox.top,2), w=round(bbox.width,2), h=round(bbox.height,2))
+		
+		ll = [-180,-90,180,90]
+		if opts['bounds']['mode'] == "bbox":
+			ll = opts['bounds']['data']
+		llbbox = SVG('llbbox', lon0=ll[0],lon1=ll[2],lat0=ll[1],lat1=ll[3])
+		
+		views.append(view)
+		view.append(proj_)
+		view.append(bbox)
+		view.append(llbbox)
+		
+		meta.append(views)
+		svg.append(meta)
+		
+		return svg
+		

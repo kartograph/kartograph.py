@@ -131,5 +131,29 @@ class MultiPolygon(SolidGeometry):
 			out.append(out_c)
 		out_poly = MultiPolygon(out)
 		return out_poly	
+	
+	
+	def to_svg(self, round):
+		"""
+		constructs a svg representation of this polygon
+		"""
+		from svgfig import SVG
+		path_str = ""
+		if round is False: fmt = '%f,%f'
+		else: 
+			fmt = '%.'+str(round)+'f'
+			fmt = fmt+','+fmt
+			
+		for pts in self.contours:
+			cont_str = ""
+			for pt in pts:
+				if cont_str == "": cont_str = "M"
+				else: cont_str += "L"
+				cont_str += fmt % pt
+			cont_str += "Z "
+			path_str += cont_str
+			
+		path = SVG('path', d=path_str)
+		return path
 
 	

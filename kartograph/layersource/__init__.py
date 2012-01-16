@@ -9,14 +9,20 @@ as of version 2.0 kartograph supports multiple import formats
 __all__ = ['LayerSource', 'ShapefileLayer']
 
 from shplayer import ShapefileLayer
+from graticule import GraticuleLayer
 from layersource import LayerSource
 from kartograph.errors import *
 
 
-def handle_layer_source(src):
-	if src[-4:].lower() == ".shp": # shapefile layer
-		src = ShapefileLayer(src)
-	if isinstance(src, LayerSource):
-		 return src
-	else:
-		raise KartographLayerSourceError('don\'t know how to handle "'+src+'"')
+def handle_layer_source(layer):
+	if 'src' in layer:
+		src = layer['src']
+		if src[-4:].lower() == ".shp": # shapefile layer
+			src = ShapefileLayer(src)
+		if isinstance(src, LayerSource):
+			 return src
+		else:
+			raise KartographLayerSourceError('don\'t know how to handle "'+src+'"')
+	elif 'special' in layer:
+		if layer['special'] == 'graticule':
+			return GraticuleLayer()

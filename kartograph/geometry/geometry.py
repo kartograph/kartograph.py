@@ -13,9 +13,17 @@ class Geometry:
 	
 	def bbox(self):
 		raise NotImplementedError('bbox() is not implemented')
-		
+	
+	def project(self, proj):
+		raise NotImplementedError('project() is not implemented')
+	
 	def project_view(self, view):
 		raise NotImplementedError('project_view() is not implemented')
+		
+	def to_svg(self, round=0):
+		raise NotImplementedError('toSVG() is not implemented')
+		
+
 
 	
 class SolidGeometry(Geometry):

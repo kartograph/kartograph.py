@@ -16,3 +16,8 @@ class Feature:
 		
 	def project_view(self, view):
 		self.geometry = self.geometry.project_view(view)
+		
+	def to_svg(self, round, attributes=[]):
+		svg = self.geometry.to_svg(round)
+		# todo: add data attribtes
+		return svg
