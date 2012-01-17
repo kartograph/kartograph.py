@@ -66,6 +66,7 @@ class Azimuthal(Proj):
 				x = self.r + math.cos(math.radians(phi)) * self.r
 				y = self.r + math.sin(math.radians(phi)) * self.r
 				out.append((x,y))
+			out = [out]
 		else:
 			out = super(Azimuthal, self).sea_shape(llbbox)
 		return out

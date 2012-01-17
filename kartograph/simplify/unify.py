@@ -1,28 +1,41 @@
 
+from mpoint import MPoint
 
-def unify(polygons):
+
+def create_point_store():
+	"""
+	creates a new point_store
+	"""
+	point_store = { 'kept': 0, 'removed': 0 }
+	return point_store
+	
+
+def unify_polygons(polygons, point_store):
+	out = []
+	for polygon in polygons:
+		out.append(unify_polygon(polygon, point_store))
+	return out
+
+
+def unify_polygon(polygon, point_store):
 	"""
 	Replaces duplicate points with an instance of the 
 	same point
 	"""
-	point_store = {}
-	out_polygons = []
-	kept = 0
-	removed = 0
-	for poly in polygons:
-		new_points = []
-		for pt in poly.points:
-			pid = '%f-%f' % (pt.x, pt.y)
-			if pid in point_store:
-				point = point_store[pid]
-				if point.two: point.three = True
-				else: point.two = True
-				removed += 1
-			else:
-				point = pt
-				kept += 1
-				point_store[pid] = pt
-			new_points.append(point)
-		poly.points = new_points
-	#print 'unifying polygons removed %d duplicate points (of %d total points)'%(removed, removed+kept)			
+	new_points = []
+	for pt in polygon:
+		if 'deleted' not in pt:
+			pt = MPoint(pt[0], pt[1]) # eventually convert to MPoint
+		pid = '%.1f-%.1f' % (pt.x, pt.y)
+		if pid in point_store:
+			point = point_store[pid]
+			if point.two: point.three = True
+			else: point.two = True
+			point_store['removed'] += 1
+		else:
+			point = pt
+			point_store['kept'] += 1
+			point_store[pid] = pt
+		new_points.append(point)
+	return new_points
 

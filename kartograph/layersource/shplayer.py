@@ -89,6 +89,14 @@ def points2polygon(shp):
 	contours = []
 	for j in range(len(parts)-1):
 		pts = shp.points[parts[j]:parts[j+1]]
-		contours.append(pts)
+		pts_ = []
+		lpt = None
+		for pt in pts:
+			if lpt is None:
+				pts_.append(pt)
+			elif pt != lpt:
+				pts_.append(pt)
+			lpt = pt
+		contours.append(pts_)
 	poly = MultiPolygon(contours)	
 	return poly

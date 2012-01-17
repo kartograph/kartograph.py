@@ -31,6 +31,15 @@ class Geometry:
 		
 	def is_emtpy(self):
 		return False
+		
+	def unify(self, point_store):
+		raise NotImplementedError('unify() is not implemented yet')
+		
+	def points(self):
+		"""
+		returns a list of point lists
+		"""
+		raise NotImplementedError('points() is not implemented yet')
 
 	
 class SolidGeometry(Geometry):

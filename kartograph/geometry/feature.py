@@ -31,6 +31,8 @@ class Feature:
 			if cfg['src'] not in self.props:
 				raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
 			svg['data-'+cfg['tgt']] = self.props[cfg['src']]
+		if '__color__' in self.props:
+			svg['fill'] = self.props['__color__']
 		return svg
 		
 	def is_empty(self):

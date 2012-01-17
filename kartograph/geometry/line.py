@@ -66,4 +66,13 @@ class Line(Geometry):
 	def is_empty(self):
 		return len(self.points) == 0
 		
+	
+	def unify(self, point_store):
+		from kartograph.simplify import unify_polygon
+		self.points = unify_polygon(self.points, point_store)
+
+	
+	def points(self):
+		return [self.points]
+		
 		

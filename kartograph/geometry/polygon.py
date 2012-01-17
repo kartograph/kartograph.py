@@ -37,13 +37,30 @@ class MultiPolygon(SolidGeometry):
 		self.__area = None
 		self.__areas = None
 		self.__centroid = None
+		self.apply_contours(contours)
+	
+	
+	def apply_contours(self, contours):
+		"""
+		constructs a Polygon from contours
+		"""
 		self.contours = contours
 		from Polygon import Polygon as GPCPoly
 		poly = GPCPoly()
-		for pts in contours:
+		skip = 0
+		for pts_ in contours:
+			pts = []
+			for pt in pts_:
+				if 'deleted' in pt and pt.deleted is True: 
+					skip += 1
+					continue
+				pts.append((pt[0], pt[1]))
 			ishole = utils.is_clockwise(pts)
-			poly.addContour(pts, ishole)
+			
+			if len(pts) > 2:
+				poly.addContour(pts, ishole)
 		self.poly = poly
+		
 
 	def area(self):
 		if self.__area is not None:
@@ -169,6 +186,7 @@ class MultiPolygon(SolidGeometry):
 		for pts in self.contours:
 			cont_str = ""
 			for pt in pts:
+				if 'deleted' in pt and pt.deleted is True: continue			
 				if cont_str == "": cont_str = "M"
 				else: cont_str += "L"
 				cont_str += fmt % pt
@@ -177,8 +195,27 @@ class MultiPolygon(SolidGeometry):
 			
 		path = SVG('path', d=path_str)
 		return path
-
+		
 	
 	def is_empty(self):
 		return len(self.contours) == 0
+		
 	
+	def unify(self, point_store):
+		from kartograph.simplify import unify_polygons
+		contours = self.contours
+		contours = unify_polygons(contours, point_store)
+		self.apply_contours(contours)
+	
+	
+	def points(self):
+		return self.contours
+		
+	
+	def update(self):
+		"""
+		is called after the points of this geometry are
+		changed from outside this class
+		"""
+		self.apply_contours(self.contours)
+		

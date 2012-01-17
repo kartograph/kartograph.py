@@ -1,6 +1,6 @@
 
 from kartograph.geometry import Line, Feature
-from layersource import LayerSource
+from kartograph.layersource.layersource import LayerSource
 
 class GraticuleLayer(LayerSource):
 	"""

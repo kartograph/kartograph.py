@@ -31,18 +31,16 @@ class Kartograph(object):
 		layers = []
 		layerOpts = {}
 		layerFeatures = {}
-		
+
 		# get features
 		for layer in opts['layers']:
 			id = layer['id']
 			layerOpts[id] = layer
 			layers.append(id)
-			features = self.get_features(layer, proj, view, opts)	
+			features = self.get_features(layer, proj, view, opts, view_poly)	
 			layerFeatures[id] = features
 			
-			
-		# simplify features
-		
+		self.simplify_layers(layers, layerFeatures, layerOpts)
 		self.crop_layers_to_view(layers, layerFeatures, view_poly)
 		self.crop_layers(layers, layerOpts, layerFeatures)
 		self.substract_layers(layers, layerOpts, layerFeatures)
@@ -118,10 +116,8 @@ class Kartograph(object):
 		data = bnds['data']
 		
 		if mode == "bbox": # catch special case bbox
-			lon0,lat0,lon1,lat1 = data # lon0,lat0,lon1,lat1
-			pts = [(lon0,lat0),(lon1,lat0),(lon1,lat1),(lon0,lat1)]
-			contours = proj.plot(pts)
-			return MultiPolygon(contours)
+			sea = proj.sea_shape()
+			return MultiPolygon(sea)
 		
 		bbox = BBox()
 				
@@ -180,7 +176,7 @@ class Kartograph(object):
 		return View(bbox, w, h-1)
 		
 	
-	def get_features(self, layer, proj, view, opts):
+	def get_features(self, layer, proj, view, opts, view_poly):
 		"""
 		returns a list of projected and filtered features of a layer
 		"""
@@ -215,6 +211,8 @@ class Kartograph(object):
 					bbox = opts['bounds']['data']
 				step = layer['step']
 				features = src.get_features(step, proj, bbox)
+			elif layer['special'] == "sea":
+				features = src.get_features(view_poly)
 				
 		
 		for feature in features:
@@ -233,7 +231,7 @@ class Kartograph(object):
 		w = view.width
 		h = view.height+2
 		
-		svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:1pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
+		svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
 	
 		css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
 		
@@ -263,6 +261,35 @@ class Kartograph(object):
 		
 		return svg
 	
+	
+	def simplify_layers(self, layers, layerFeatures, layerOpts):
+		"""
+		performs polygon simplification
+		"""
+		# step 1: unify
+		from simplify import create_point_store, simplify_distance
+		
+		point_store = create_point_store()
+		for id in layers:
+			for feature in layerFeatures[id]:
+				feature.geom.unify(point_store)
+				
+		print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
+		
+		to_simplify = []
+		for id in layers:
+			if layerOpts[id]['simplify'] is not False:
+				to_simplify.append(id)
+				
+		to_simplify.sort(key=lambda id: layerOpts[id]['simplify'])
+		
+		for id in to_simplify:
+			print 'simplifying',id
+			for feature in layerFeatures[id]:
+				for pts in feature.geom.points():
+					simplify_distance(pts, layerOpts[id]['simplify'])
+				feature.geom.update()
+		
 	
 	def crop_layers_to_view(self, layers, layerFeatures, view_poly):
 		"""

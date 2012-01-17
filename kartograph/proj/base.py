@@ -65,6 +65,9 @@ class Proj(object):
 		return bbox		
 
 	def sea_shape(self, llbbox=(-180,-90,180,90)):
+		"""
+		returns multi-polygon contours
+		"""
 		sea = []
 		out = []
 		
@@ -94,7 +97,7 @@ class Proj(object):
 			lon, lat = s
 			out.append(self.project(lon, lat))
 			
-		return out	
+		return [out]	
 		
 	def __str__(self):
 		return 'Proj('+self.name+')'

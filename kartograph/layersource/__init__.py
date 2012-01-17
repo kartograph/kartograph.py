@@ -6,13 +6,12 @@ as of version 2.0 kartograph supports multiple import formats
 - GeoJSON ?
 """
 
-__all__ = ['LayerSource', 'ShapefileLayer']
+__all__ = ['LayerSource', 'ShapefileLayer', 'GraticuleLayer']
 
 from shplayer import ShapefileLayer
-from graticule import GraticuleLayer
 from layersource import LayerSource
+from special import GraticuleLayer, SeaLayer
 from kartograph.errors import *
-
 
 def handle_layer_source(layer):
 	if 'src' in layer:
@@ -26,3 +25,5 @@ def handle_layer_source(layer):
 	elif 'special' in layer:
 		if layer['special'] == 'graticule':
 			return GraticuleLayer()
+		elif layer['special'] == 'sea':
+			return SeaLayer()
