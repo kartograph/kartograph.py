@@ -185,8 +185,13 @@ class MultiPolygon(SolidGeometry):
 		
 		for pts in self.contours:
 			cont_str = ""
+			kept = []
 			for pt in pts:
-				if 'deleted' in pt and pt.deleted is True: continue			
+				if 'deleted' in pt and pt.deleted is True: continue	
+				kept.append(pt)
+				
+			if len(kept) <= 4: continue
+			for pt in kept:
 				if cont_str == "": cont_str = "M"
 				else: cont_str += "L"
 				cont_str += fmt % pt

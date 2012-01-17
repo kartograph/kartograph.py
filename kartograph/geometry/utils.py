@@ -31,6 +31,8 @@ def join_features(features, props):
 	from polygon import MultiPolygon
 	from feature import Feature
 	
+	if len(features) == 0: return features
+	
 	joined = []
 	polygons = []
 	
@@ -39,7 +41,7 @@ def join_features(features, props):
 			polygons.append(feat.geom)	
 		else:
 			joined.append(feat) # cannot join this
-	
+		
 	poly = polygons[0].poly
 	for poly2 in polygons[1:]:
 		poly = poly | poly2.poly

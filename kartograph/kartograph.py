@@ -22,7 +22,9 @@ class Kartograph(object):
 		
 		proj = self.get_projection(opts)
 		bounds_poly = self.get_bounds(opts,proj)
-		bbox = bounds_poly.bbox()
+		bbox = bounds_poly.bbox()	
+		print bbox, bbox.width/bbox.height
+		
 		view = self.get_view(opts, bbox)
 		view_poly = bounds_poly.project_view(view)
 		
@@ -43,8 +45,8 @@ class Kartograph(object):
 		self.simplify_layers(layers, layerFeatures, layerOpts)
 		self.crop_layers_to_view(layers, layerFeatures, view_poly)
 		self.crop_layers(layers, layerOpts, layerFeatures)
-		self.substract_layers(layers, layerOpts, layerFeatures)
 		self.join_layers(layers, layerOpts, layerFeatures)
+		self.substract_layers(layers, layerOpts, layerFeatures)
 		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
 		
 		if outfile is None:
@@ -134,6 +136,8 @@ class Kartograph(object):
 			for feature in features:
 				fbbox = feature.geom.project(proj).bbox(data["min_area"])
 				bbox.join(fbbox)
+				
+		print bbox		
 				
 		bbox.inflate(bbox.width * bnds['padding'])
 		

@@ -91,8 +91,8 @@ class Robinson(PseudoCylindrical):
 			i = self.NODES - 1
 		phi = math.degrees(phi - self.RC1 * i)
 		i *= 4
-		x = self._poly(self.X, i, phi) * self.FXC * lplam;
-		y = self._poly(self.Y, i, phi) * self.FYC;
+		x = 1000 * self._poly(self.X, i, phi) * self.FXC * lplam;
+		y = 1000 * self._poly(self.Y, i, phi) * self.FYC;
 		if lpphi < 0.0:
 			y = -y
 			

@@ -26,9 +26,10 @@ def unify_polygon(polygon, point_store):
 	for pt in polygon:
 		if 'deleted' not in pt:
 			pt = MPoint(pt[0], pt[1]) # eventually convert to MPoint
-		pid = '%.1f-%.1f' % (pt.x, pt.y)
+		pid = '%f-%f' % (pt.x, pt.y)
 		if pid in point_store:
 			point = point_store[pid]
+			if point.three: point.deleted = True
 			if point.two: point.three = True
 			else: point.two = True
 			point_store['removed'] += 1

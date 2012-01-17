@@ -153,10 +153,11 @@ def parse_layer_cropping(layer):
 		layer['crop-to'] = False
 		return
 		
+		
 def parse_bounds(opts):
 	if 'bounds' not in opts: 
-		opts['bounds'] = "auto"
-		return
+		opts['bounds'] = {}
+		#return
 	bounds = opts['bounds']
 	if 'mode' not in bounds:
 		bounds['mode'] = 'bbox'
