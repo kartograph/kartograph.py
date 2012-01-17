@@ -40,6 +40,10 @@ class Geometry:
 		returns a list of point lists
 		"""
 		raise NotImplementedError('points() is not implemented yet')
+		
+	def join(self, geom):
+		raise NotImplementedError('join() is not implemented yet')
+		
 
 	
 class SolidGeometry(Geometry):

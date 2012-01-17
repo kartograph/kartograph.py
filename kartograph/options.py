@@ -121,11 +121,18 @@ def parse_layer_join(layer):
 	if 'join' not in layer:
 		layer['join'] = False
 		return
+	join = layer['join']
+	if 'group-by' not in join:
+		raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
+	if 'groups' not in join:
+		raise Error('missing attribute "groups"')
+	if 'group-as' not in join:
+		join['group-as'] = False
 		
 		
 def parse_layer_simplify(layer):
 	if 'simplify' not in layer:
-		layer['simplify'] = False
+		layer['simplify'] = 2
 		return
 	try:
 		layer['simplify'] = float(layer['simplify'])
@@ -148,7 +155,8 @@ def parse_layer_cropping(layer):
 		
 def parse_bounds(opts):
 	if 'bounds' not in opts: 
-		opts['bounds'] = { }
+		opts['bounds'] = "auto"
+		return
 	bounds = opts['bounds']
 	if 'mode' not in bounds:
 		bounds['mode'] = 'bbox'

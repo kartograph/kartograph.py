@@ -44,6 +44,7 @@ class Kartograph(object):
 		self.crop_layers_to_view(layers, layerFeatures, view_poly)
 		self.crop_layers(layers, layerOpts, layerFeatures)
 		self.substract_layers(layers, layerOpts, layerFeatures)
+		self.join_layers(layers, layerOpts, layerFeatures)
 		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
 		
 		svg.firefox()
@@ -339,7 +340,38 @@ class Kartograph(object):
 								sfeat.substract_geom(feat.geom)
 				layerFeatures[id] = []
 				
-				
+	
+	def join_layers(self, layers, layerOpts, layerFeatures):
+		"""
+		joins features in layers 
+		"""
+		from geometry.utils import join_features
+		
+		for id in layers:
+			if layerOpts[id]['join'] is not False:
+				join = layerOpts[id]['join']
+				groupBy = join['group-by']
+				groups = join['groups']
+				groupAs = join['group-as']
+				groupFeatures = {}
+				res = []
+				for feat in layerFeatures[id]:
+					found_in_group = False
+					for g_id in groups:
+						if g_id not in groupFeatures:
+							groupFeatures[g_id] = []
+						if feat.props[groupBy] in groups[g_id]:
+							groupFeatures[g_id].append(feat)
+							found_in_group = True
+							break
+					if not found_in_group: res.append(feat)
+				for g_id in groups:
+					props = {}
+					if groupAs is not False:
+						props[groupAs] = g_id
+					res += join_features(groupFeatures[g_id], props)
+				layerFeatures[id] = res
+		
 	
 	def store_layers(self, layers, layerOpts, layerFeatures, svg, opts):
 		"""

@@ -10,7 +10,7 @@ class Feature:
 		self.properties = self.props = properties
 		
 	def __repr__(self):
-		return str(self.props)
+		return 'Feature()'
 		
 	def project(self, proj):
 		self.geometry = self.geom = self.geometry.project(proj)
@@ -29,8 +29,17 @@ class Feature:
 		# todo: add data attribtes
 		for cfg in attributes:
 			if cfg['src'] not in self.props:
-				raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
-			svg['data-'+cfg['tgt']] = self.props[cfg['src']]
+				continue
+				#raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
+			val = self.props[cfg['src']]
+			
+			import unicodedata
+			# if isinstance(val, unicode):
+			if isinstance(val, str):
+				val = unicode(val, errors='ignore')
+				val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')	
+		
+			svg['data-'+cfg['tgt']] = val
 		if '__color__' in self.props:
 			svg['fill'] = self.props['__color__']
 		return svg

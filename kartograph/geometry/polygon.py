@@ -38,7 +38,16 @@ class MultiPolygon(SolidGeometry):
 		self.__areas = None
 		self.__centroid = None
 		self.apply_contours(contours)
-	
+
+
+	@staticmethod
+	def fromPoly(poly):
+		contours = []
+		for i in range(len(poly)):
+			pts = poly.contour(i)
+			contours.append(pts)
+		return MultiPolygon(contours)
+		
 	
 	def apply_contours(self, contours):
 		"""
@@ -161,15 +170,6 @@ class MultiPolygon(SolidGeometry):
 			raise NotImplementedError('substraction is allowed for polygons only, yet')
 		poly = self.poly - geom.poly
 		return MultiPolygon.fromPoly(poly)
-		
-		
-	@staticmethod
-	def fromPoly(poly):
-		contours = []
-		for i in range(len(poly)):
-			pts = poly.contour(i)
-			contours.append(pts)
-		return MultiPolygon(contours)
 	
 		
 	def to_svg(self, round):
@@ -218,4 +218,7 @@ class MultiPolygon(SolidGeometry):
 		changed from outside this class
 		"""
 		self.apply_contours(self.contours)
+
 		
+
+	

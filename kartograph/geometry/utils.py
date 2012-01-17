@@ -25,3 +25,23 @@ def bbox_to_polygon(bbox):
 	s = bbox
 	poly = MultiPolygon([[(s.left,s.bottom),(s.left,s.top),(s.right,s.top),(s.right,s.bottom)]])
 	return poly	
+
+	
+def join_features(features, props):
+	from polygon import MultiPolygon
+	from feature import Feature
+	
+	joined = []
+	polygons = []
+	
+	for feat in features:
+		if isinstance(feat.geom, MultiPolygon):
+			polygons.append(feat.geom)	
+		else:
+			joined.append(feat) # cannot join this
+	
+	poly = polygons[0].poly
+	for poly2 in polygons[1:]:
+		poly = poly | poly2.poly
+	joined.append(Feature(MultiPolygon(poly), props))
+	return joined
