@@ -8,14 +8,14 @@ class Line(Geometry):
 	simple line (= list of points)
 	"""
 	def __init__(self, points):
-		self.points = points
+		self.pts = points
 		
 	def bbox(self):
 		"""
 		returns the bounding box of the line
 		"""
 		bbox = BBox()
-		for pt in self.points:
+		for pt in self.pts:
 			bbox.update(pt)
 		return bbox
 	
@@ -25,7 +25,7 @@ class Line(Geometry):
 		projects the line to a map projection
 		"""
 		pts = []
-		for pt in self.points:
+		for pt in self.pts:
 			p = proj.project(pt[0], pt[1])
 			if p is not None:
 				pts.append(p)
@@ -37,7 +37,7 @@ class Line(Geometry):
 		transforms the line to a new view
 		"""
 		pts = []
-		for pt in self.points:
+		for pt in self.pts:
 			p = view.project(pt)
 			pts.append(p)
 		return Line(pts)
@@ -54,7 +54,7 @@ class Line(Geometry):
 			fmt = '%.'+str(round)+'f'
 			fmt = fmt+','+fmt
 			
-		for pt in self.points:
+		for pt in self.pts:
 			if path_str == "": path_str = "M"
 			else: path_str += "L"
 			path_str += fmt % pt
@@ -63,16 +63,21 @@ class Line(Geometry):
 		return path
 		
 	
+	def crop_to(self, geom):
+		# skip
+		return self
+	
+	
 	def is_empty(self):
-		return len(self.points) == 0
+		return len(self.pts) == 0
 		
 	
 	def unify(self, point_store):
 		from kartograph.simplify import unify_polygon
-		self.points = unify_polygon(self.points, point_store)
+		self.points = unify_polygon(self.pts, point_store)
 
 	
 	def points(self):
-		return [self.points]
+		return [self.pts]
 		
 		

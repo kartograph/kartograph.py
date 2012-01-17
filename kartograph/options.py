@@ -132,7 +132,9 @@ def parse_layer_join(layer):
 		
 def parse_layer_simplify(layer):
 	if 'simplify' not in layer:
-		layer['simplify'] = 2
+		layer['simplify'] = 2.0
+		return
+	if layer['simplify'] is False:
 		return
 	try:
 		layer['simplify'] = float(layer['simplify'])

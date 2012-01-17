@@ -190,7 +190,7 @@ class MultiPolygon(SolidGeometry):
 				if 'deleted' in pt and pt.deleted is True: continue	
 				kept.append(pt)
 				
-			if len(kept) <= 4: continue
+			if len(kept) <= 3: continue
 			for pt in kept:
 				if cont_str == "": cont_str = "M"
 				else: cont_str += "L"

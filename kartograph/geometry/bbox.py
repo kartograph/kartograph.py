@@ -44,7 +44,7 @@ class BBox(object):
 		return bbox.left < self.right and bbox.right > self.left and bbox.top < self.bottom and bbox.bottom > self.top
 		
 	def __str__(self):
-		return '[%.2f, %.2f, %.2f, %.2f]' % (self.left, self.top, self.right, self.bottom)
+		return '[%.2f, %.2f, %.2f, %.2f]' % (self.left, self.top, self.width, self.height)
 		
 	def join(self, bbox):
 		self.update(Point(bbox.left, bbox.top))

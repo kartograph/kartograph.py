@@ -26,7 +26,10 @@ class Kartograph(object):
 		print bbox, bbox.width/bbox.height
 		
 		view = self.get_view(opts, bbox)
-		view_poly = bounds_poly.project_view(view)
+		w = view.width
+		h = view.height
+		view_poly = MultiPolygon([[(0,0),(0,h),(w,h),(w,0)]])
+		# view_poly = bounds_poly.project_view(view)
 		
 		svg = self.init_svg_canvas(opts, proj, view, bbox)
 		
@@ -276,12 +279,15 @@ class Kartograph(object):
 		# step 1: unify
 		from simplify import create_point_store, simplify_distance
 		
+		print layerOpts
+		
 		point_store = create_point_store()
 		for id in layers:
-			for feature in layerFeatures[id]:
-				feature.geom.unify(point_store)
+			if layerOpts[id]['simplify'] is not False:
+				for feature in layerFeatures[id]:
+					feature.geom.unify(point_store)
 				
-		print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
+		#print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
 		
 		to_simplify = []
 		for id in layers:
@@ -375,7 +381,8 @@ class Kartograph(object):
 					props = {}
 					if groupAs is not False:
 						props[groupAs] = g_id
-					res += join_features(groupFeatures[g_id], props)
+					if g_id in groupFeatures:
+						res += join_features(groupFeatures[g_id], props)
 				layerFeatures[id] = res
 		
 	
