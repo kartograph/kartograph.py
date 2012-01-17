@@ -28,11 +28,11 @@ def main():
 					cfg = json.loads(t)
 				else:
 					raise Error('config json not found')
-			elif o in ('o', '--output'):	
+			elif o in ('-o', '--output'):	
 				output = a
 				
 		K = Kartograph()
-		K.generate(cfg,output)
+		K.generate(cfg, output)
 		sys.exit(0)
 
 if __name__ == "__main__":

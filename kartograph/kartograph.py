@@ -47,8 +47,10 @@ class Kartograph(object):
 		self.join_layers(layers, layerOpts, layerFeatures)
 		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
 		
-		svg.firefox()
-		
+		if outfile is None:
+			svg.firefox()
+		else:
+			svg.save(outfile)
 	
 	def prepare_layers(self, opts):
 		"""
