@@ -28,18 +28,26 @@ class Feature:
 		svg = self.geometry.to_svg(round)
 		# todo: add data attribtes
 		for cfg in attributes:
-			if cfg['src'] not in self.props:
-				continue
-				#raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
-			val = self.props[cfg['src']]
-			
-			import unicodedata
-			# if isinstance(val, unicode):
-			if isinstance(val, str):
-				val = unicode(val, errors='ignore')
-				val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')	
-		
-			svg['data-'+cfg['tgt']] = val
+			if 'src' in cfg:
+				if cfg['src'] not in self.props:
+					continue
+					#raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
+				val = self.props[cfg['src']]
+				import unicodedata
+				if isinstance(val, str):
+					val = unicode(val, errors='ignore')
+					val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')				
+				svg['data-'+cfg['tgt']] = val
+				
+			elif 'where' in cfg:
+				src = cfg['where']
+				tgt = cfg['set']
+				if len(cfg['equals']) != len(cfg['to']):
+					raise errors.KartographError('attributes: "equals" and "to" arrays must be of same length')
+				for i in range(len(cfg['equals'])):
+					if self.props[src] == cfg['equals'][i]:	
+						svg['data-'+tgt] = cfg['to'][i]
+				
 		if '__color__' in self.props:
 			svg['fill'] = self.props['__color__']
 		return svg

@@ -53,7 +53,8 @@ class ShapefileLayer(LayerSource):
 		"""
 		from kartograph.geometry import Feature
 		if attr is not None and attr not in self.attrIndex:
-			raise errors.ShapefileAttributesError('could not find an attribute named "'+attr+'" in shapefile '+self.shpSrc+'\n\navailable attributes are:\n'+' '.join(self.attributes))
+		
+			raise errors.KartographShapefileAttributesError('could not find an attribute named "'+attr+'" in shapefile '+self.shpSrc+'\n\navailable attributes are:\n'+' '.join(self.attributes))
 		res = []
 		for i in range(0,len(self.recs)):
 			if attr is not None:

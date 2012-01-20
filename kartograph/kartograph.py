@@ -10,6 +10,7 @@ class Kartograph(object):
 	main class of Kartograph
 	"""
 	def __init__(self):
+		self.layerCache = {}
 		pass
 		
 		
@@ -23,7 +24,6 @@ class Kartograph(object):
 		proj = self.get_projection(opts)
 		bounds_poly = self.get_bounds(opts,proj)
 		bbox = bounds_poly.bbox()	
-		print bbox, bbox.width/bbox.height
 		
 		view = self.get_view(opts, bbox)
 		w = view.width
@@ -57,14 +57,20 @@ class Kartograph(object):
 		else:
 			svg.save(outfile)
 	
+	
 	def prepare_layers(self, opts):
 		"""
 		prepares layer sources
 		"""
 		self.layers = layers = {}
+		
 		for layer in opts['layers']:
 			id = layer['id']
-			src = handle_layer_source(layer)
+			while id in layers:
+				id += "_"
+			if id != layer['id']:
+				layer['id'] = id # rename layer
+			src = handle_layer_source(layer, self.layerCache)
 			layers[id] = src
 
 	
@@ -139,8 +145,6 @@ class Kartograph(object):
 			for feature in features:
 				fbbox = feature.geom.project(proj).bbox(data["min_area"])
 				bbox.join(fbbox)
-				
-		print bbox		
 				
 		bbox.inflate(bbox.width * bnds['padding'])
 		
@@ -279,8 +283,6 @@ class Kartograph(object):
 		# step 1: unify
 		from simplify import create_point_store, simplify_distance
 		
-		print layerOpts
-		
 		point_store = create_point_store()
 		for id in layers:
 			if layerOpts[id]['simplify'] is not False:
@@ -379,6 +381,15 @@ class Kartograph(object):
 					if not found_in_group: res.append(feat)
 				for g_id in groups:
 					props = {}
+					for feat in groupFeatures[g_id]:
+						fprops = feat.props
+						for key in fprops:
+							if key not in props:
+								props[key] = fprops[key]
+							else:
+								if props[key] != fprops[key]:
+									props[key] = "---"
+									
 					if groupAs is not False:
 						props[groupAs] = g_id
 					if g_id in groupFeatures:
@@ -397,7 +408,7 @@ class Kartograph(object):
 			if len(layerFeatures[id]) == 0: continue # ignore empty layers
 			g = SVG('g', id=id)
 			for feat in layerFeatures[id]:
-				g.append(feat.to_svg(opts['export']['round'], layerOpts[id]['attributes']))			
+				g.append(feat.to_svg(opts['export']['round'], layerOpts[id]['attributes']))
 			svg.append(g)
 							
 		

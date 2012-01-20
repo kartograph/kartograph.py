@@ -6,9 +6,12 @@ command line interface for kartograph
 def main():
 	
 	import sys, os, os.path, getopt, json
+	import time
 	
+	start = time.time()
 	
 	from kartograph import Kartograph
+	from errors import KartographError
 	
 	if len(sys.argv) < 2:
 		print "try: kartograph generate"
@@ -32,7 +35,16 @@ def main():
 				output = a
 				
 		K = Kartograph()
-		K.generate(cfg, output)
+		
+		try:
+			K.generate(cfg, output)
+		except KartographError as e:
+			print e
+	
+		elapsed = (time.time() - start)
+
+		print 'execution time: %.4f secs'%elapsed
+		
 		sys.exit(0)
 
 if __name__ == "__main__":

@@ -121,6 +121,9 @@ def parse_layer_join(layer):
 	if 'join' not in layer:
 		layer['join'] = False
 		return
+	if layer['join'] is False:
+		return
+		
 	join = layer['join']
 	if 'group-by' not in join:
 		raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
