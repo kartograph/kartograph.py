@@ -10,7 +10,6 @@ def main():
 	
 	start = time.time()
 	
-	from kartograph import Kartograph
 	from errors import KartographError
 	
 	if len(sys.argv) < 2:
@@ -20,6 +19,9 @@ def main():
 	command = sys.argv[1]
 	
 	if command == "generate":
+	
+		from kartograph import Kartograph
+	
 		cfg = {}
 		output = None
 		opts, args = getopt.getopt(sys.argv[2:], 'c:o:', ['config=','output='])
@@ -44,8 +46,25 @@ def main():
 		elapsed = (time.time() - start)
 
 		print 'execution time: %.4f secs'%elapsed
-		
 		sys.exit(0)
+	
+	
+	
+	
+	elif command == "cartogram":
+		
+		from cartogram import Cartogram
+		
+		map = sys.argv[2]
+		attr = sys.argv[3]
+		data = sys.argv[4]
+		key = sys.argv[5]
+		val = sys.argv[6]
+		
+		C = Cartogram()
+		C.generate(map,attr,data,key,val)
+		
+		
 
 if __name__ == "__main__":
     main()
