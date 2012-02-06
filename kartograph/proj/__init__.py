@@ -28,6 +28,7 @@ projections['hobodyer'] = HoboDyer
 projections['behrmann'] = Behrmann
 projections['balthasart'] = Balthasart
 projections['mercator'] = Mercator
+projections['ll'] = LonLat
 
 from pseudocylindrical import *
 

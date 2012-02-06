@@ -50,7 +50,7 @@ class Kartograph(object):
 		self.crop_layers(layers, layerOpts, layerFeatures)
 		self.join_layers(layers, layerOpts, layerFeatures)
 		self.substract_layers(layers, layerOpts, layerFeatures)
-		self.store_layers(layers, layerOpts, layerFeatures, svg, opts)	
+		self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)	
 		
 		if outfile is None:
 			svg.firefox()
@@ -76,7 +76,7 @@ class Kartograph(object):
 	
 	def get_projection(self, opts):
 		"""
-		instanciates the map projection
+		instantiates the map projection
 		"""
 		map_center = self.get_map_center(opts)
 		projC = projections[opts['proj']['id']]
@@ -287,7 +287,7 @@ class Kartograph(object):
 		for id in layers:
 			if layerOpts[id]['simplify'] is not False:
 				for feature in layerFeatures[id]:
-					feature.geom.unify(point_store)
+					feature.geom.unify(point_store, layerOpts[id]['unify-precision'])
 				
 		#print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
 		
@@ -397,7 +397,7 @@ class Kartograph(object):
 				layerFeatures[id] = res
 		
 	
-	def store_layers(self, layers, layerOpts, layerFeatures, svg, opts):
+	def store_layers_svg(self, layers, layerOpts, layerFeatures, svg, opts):
 		"""
 		store features in svg
 		"""
@@ -410,5 +410,83 @@ class Kartograph(object):
 			for feat in layerFeatures[id]:
 				g.append(feat.to_svg(opts['export']['round'], layerOpts[id]['attributes']))
 			svg.append(g)
+
 							
+	def generate_kml(self, opts, outfile=None):
+		"""
+		generates KML file
+		"""
+		parse_options(opts)
+		self.prepare_layers(opts)
 		
+		#proj = self.get_projection(opts)
+		#bounds_poly = self.get_bounds(opts,proj)
+		#bbox = bounds_poly.bbox()	
+
+		
+		proj = projections['ll']()
+		view = View()
+		bbox = None
+		
+		#view = self.get_view(opts, bbox)
+		#w = view.width
+		#h = view.height
+		#view_poly = MultiPolygon([[(0,0),(0,h),(w,h),(w,0)]])
+		# view_poly = bounds_poly.project_view(view)
+		view_poly = None
+		
+		kml = self.init_kml_canvas()
+		
+		layers = []
+		layerOpts = {}
+		layerFeatures = {}
+
+
+		# get features
+		for layer in opts['layers']:
+			id = layer['id']
+			layerOpts[id] = layer
+			layers.append(id)
+			features = self.get_features(layer, proj, view, opts, view_poly)	
+			layerFeatures[id] = features
+			
+		self.simplify_layers(layers, layerFeatures, layerOpts)
+		# self.crop_layers_to_view(layers, layerFeatures, view_poly)
+		self.crop_layers(layers, layerOpts, layerFeatures)
+		self.join_layers(layers, layerOpts, layerFeatures)
+		self.substract_layers(layers, layerOpts, layerFeatures)
+		self.store_layers_kml(layers, layerOpts, layerFeatures, kml, opts)
+		
+		if outfile is None: outfile = 'tmp.kml'
+		
+		from lxml import etree
+		open(outfile,'w').write(etree.tostring(kml, pretty_print=True))
+		
+
+
+	def init_kml_canvas(self):
+		from pykml.factory import KML_ElementMaker as KML
+		kml = KML.kml(
+			KML.Document(
+				KML.name('kartograph map')
+			)
+		)
+		return kml
+		
+
+
+	def store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
+		"""
+		store features in svg
+		"""
+		from pykml.factory import KML_ElementMaker as KML
+		
+		for id in layers:
+			print id
+			if len(layerFeatures[id]) == 0: continue # ignore empty layers
+			g = KML.Folder(
+				KML.name(id)
+			)
+			for feat in layerFeatures[id]:
+				g.append(feat.to_kml(opts['export']['round'], layerOpts[id]['attributes']))
+			kml.Document.append(g)

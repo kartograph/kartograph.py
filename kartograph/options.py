@@ -134,6 +134,8 @@ def parse_layer_join(layer):
 		
 		
 def parse_layer_simplify(layer):
+	if 'unify-precision' not in layer:
+		layer['unify-precision'] = None
 	if 'simplify' not in layer:
 		layer['simplify'] = 2.0
 		return

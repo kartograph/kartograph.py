@@ -18,7 +18,7 @@ def main():
 	
 	command = sys.argv[1]
 	
-	if command == "generate":
+	if command in ("generate", "kml"):
 	
 		from kartograph import Kartograph
 	
@@ -39,7 +39,10 @@ def main():
 		K = Kartograph()
 		
 		try:
-			K.generate(cfg, output)
+			if command == "kml":
+				K.generate_kml(cfg, output)
+			else:
+				K.generate(cfg, output)
 		except KartographError as e:
 			print e
 	

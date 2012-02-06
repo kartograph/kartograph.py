@@ -52,5 +52,46 @@ class Feature:
 			svg['fill'] = self.props['__color__']
 		return svg
 		
+	def to_kml(self, round, attributes=[]):
+		path = self.geometry.to_kml(round)
+		from pykml.factory import KML_ElementMaker as KML
+		
+		pm = KML.Placemark(
+			KML.name(self.props[attributes[0]['src']]),
+			path
+		)
+		
+		xt = KML.ExtendedData()
+		
+		for cfg in attributes:
+			if 'src' in cfg:
+				if cfg['src'] not in self.props:
+					continue
+					#raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
+				val = self.props[cfg['src']]
+				import unicodedata
+				if isinstance(val, str):
+					val = unicode(val, errors='ignore')
+					val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')				
+				xt.append(KML.Data(
+					KML.value(val),
+					name=cfg['tgt']
+				))
+			elif 'where' in cfg:
+				src = cfg['where']
+				tgt = cfg['set']
+				if len(cfg['equals']) != len(cfg['to']):
+					raise errors.KartographError('attributes: "equals" and "to" arrays must be of same length')
+				for i in range(len(cfg['equals'])):
+					if self.props[src] == cfg['equals'][i]:	
+						#svg['data-'+tgt] = cfg['to'][i]
+						xt.append(KML.Data(
+							KML.value(cfg['to'][i]),
+							name=tgt
+						))
+		pm.append(xt)		
+		
+		return pm
+		
 	def is_empty(self):
 		return self.geom.is_empty()

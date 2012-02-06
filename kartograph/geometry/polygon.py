@@ -206,10 +206,10 @@ class MultiPolygon(SolidGeometry):
 		return len(self.contours) == 0
 		
 	
-	def unify(self, point_store):
+	def unify(self, point_store, precision=None):
 		from kartograph.simplify import unify_polygons
 		contours = self.contours
-		contours = unify_polygons(contours, point_store)
+		contours = unify_polygons(contours, point_store, precision)
 		self.apply_contours(contours)
 	
 	
@@ -224,6 +224,33 @@ class MultiPolygon(SolidGeometry):
 		"""
 		self.apply_contours(self.contours)
 
-		
+	
+	def to_kml(self, round=None):
+		from pykml.factory import KML_ElementMaker as KML
+		poly = KML.Polygon(
+			KML.tesselate("1")
+		)
+		outer = KML.outerBoundaryIs()
+		inner = KML.innerBoundaryIs()
+		has_inner = False
+		for i in range(len(self.poly)):
+			cnt = self.poly[i]
+			coords = ''
+			for p in cnt:
+				coords += ','.join(map(str,p))+' '
+			ring = KML.LinearRing(
+				KML.coordinates(coords)
+			)
+			#hole = self.poly.isHole(i)
+			#if hole == False:
+			outer.append(ring)
+			#else:
+			#	inner.append(ring)
+			#	has_inner = True
+				
+		poly.append(outer)
+		if has_inner: poly.append(inner)
+			
+		return poly
 
 	

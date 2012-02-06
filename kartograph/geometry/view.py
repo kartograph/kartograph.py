@@ -6,17 +6,20 @@ class View(object):
 	"""
 	translates a point to a view
 	"""
-	def __init__(self, bbox, width, height, padding=0):
+	def __init__(self, bbox=None, width=None, height=None, padding=0):
 		self.bbox = bbox
 		self.width = width
 		self.padding = padding
 		self.height = height
-		self.scale = min((width-padding*2) / bbox.width, (height-padding*2) / bbox.height)
+		if bbox:
+			self.scale = min((width-padding*2) / bbox.width, (height-padding*2) / bbox.height)
 	
 	
 	def project(self, pt):
-		s = self.scale
 		bbox = self.bbox
+		if not bbox:
+			return pt
+		s = self.scale
 		h = self.height
 		w = self.width
 		if isinstance(pt, Point):

@@ -32,7 +32,7 @@ class Geometry:
 	def is_emtpy(self):
 		return False
 		
-	def unify(self, point_store):
+	def unify(self, point_store, precision=None):
 		raise NotImplementedError('unify() is not implemented yet')
 		
 	def points(self):

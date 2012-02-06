@@ -186,3 +186,8 @@ class Mercator(Cylindrical):
 		x = lam * 1000
 		y = math.log((1+math.sin(phi)) / math.cos(phi)) * 1000
 		return (x,y)
+
+
+class LonLat(Cylindrical):
+	def project(self, lon, lat):
+		return (lon,lat)
