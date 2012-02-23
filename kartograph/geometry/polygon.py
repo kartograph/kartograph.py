@@ -198,6 +198,9 @@ class MultiPolygon(SolidGeometry):
 			cont_str += "Z "
 			path_str += cont_str
 			
+		if path_str == "":
+			return None
+			
 		path = SVG('path', d=path_str)
 		return path
 		

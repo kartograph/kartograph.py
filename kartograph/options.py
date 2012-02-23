@@ -128,7 +128,7 @@ def parse_layer_join(layer):
 	if 'group-by' not in join:
 		raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
 	if 'groups' not in join:
-		raise Error('missing attribute "groups"')
+		join['groups'] = None
 	if 'group-as' not in join:
 		join['group-as'] = False
 		
@@ -203,9 +203,12 @@ def parse_bounds(opts):
 		if "layer" not in data or not is_str(data["layer"]):
 			raise Error('you must specify a layer for bounds mode '+mode)
 		if "attribute" not in data or not is_str(data["attribute"]):
-			raise Error('you must specify an attribute for bounds mode '+mode)
+			data["attribute"] = None
 		if "values" not in data:
-			raise Error('you must specify a list of values for bounds mode '+mode)
+			if data["attribute"] is None:
+				data["values"] = None
+			else:
+				raise Error('you must specify a list of values to match in bounds mode '+mode)
 		if is_str(data["values"]):
 			data["values"] = [data["values"]]
 		if "min_area" in data:

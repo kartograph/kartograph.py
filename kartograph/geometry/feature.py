@@ -26,6 +26,8 @@ class Feature:
 		
 	def to_svg(self, round, attributes=[]):
 		svg = self.geometry.to_svg(round)
+		if svg is None:
+			return None
 		# todo: add data attribtes
 		for cfg in attributes:
 			if 'src' in cfg:

@@ -45,10 +45,10 @@ class Kartograph(object):
 			features = self.get_features(layer, proj, view, opts, view_poly)	
 			layerFeatures[id] = features
 			
+		self.join_layers(layers, layerOpts, layerFeatures)
 		self.simplify_layers(layers, layerFeatures, layerOpts)
 		self.crop_layers_to_view(layers, layerFeatures, view_poly)
 		self.crop_layers(layers, layerOpts, layerFeatures)
-		self.join_layers(layers, layerOpts, layerFeatures)
 		self.substract_layers(layers, layerOpts, layerFeatures)
 		self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)	
 		
@@ -130,7 +130,7 @@ class Kartograph(object):
 		data = bnds['data']
 		
 		if mode == "bbox": # catch special case bbox
-			sea = proj.sea_shape()
+			sea = proj.sea_shape(data)
 			return MultiPolygon(sea)
 		
 		bbox = BBox()
@@ -147,7 +147,7 @@ class Kartograph(object):
 				bbox.join(fbbox)
 				
 		bbox.inflate(bbox.width * bnds['padding'])
-		
+		print bbox
 		return bbox_to_polygon(bbox)
 	
 	
@@ -164,9 +164,12 @@ class Kartograph(object):
 			raise KartographError('layer not found "%s"'%id)
 		layer = self.layers[id]
 		attr = data['attribute']
-		values = data['values']
-		features = layer.get_features(attr, lambda id: id in values)
-		
+		if attr is None:
+			filter = None
+		else:
+			values = data['values']
+			filter = lambda id: id in values
+		features = layer.get_features(attr, filter)
 		return features
 
 
@@ -363,9 +366,17 @@ class Kartograph(object):
 		
 		for id in layers:
 			if layerOpts[id]['join'] is not False:
+				unjoined = 0
 				join = layerOpts[id]['join']
 				groupBy = join['group-by']
 				groups = join['groups']
+				if not groups:
+					# auto populate groups
+					groups = {}
+					for feat in layerFeatures[id]:
+						fid = feat.props[groupBy]
+						groups[fid] = [fid]
+						
 				groupAs = join['group-as']
 				groupFeatures = {}
 				res = []
@@ -374,11 +385,14 @@ class Kartograph(object):
 					for g_id in groups:
 						if g_id not in groupFeatures:
 							groupFeatures[g_id] = []
-						if feat.props[groupBy] in groups[g_id]:
+						if feat.props[groupBy] in groups[g_id] or str(feat.props[groupBy]) in groups[g_id]:
 							groupFeatures[g_id].append(feat)
 							found_in_group = True
 							break
-					if not found_in_group: res.append(feat)
+					if not found_in_group: 	
+						unjoined += 1
+						res.append(feat)
+				#print unjoined,'features were not joined'
 				for g_id in groups:
 					props = {}
 					for feat in groupFeatures[g_id]:
@@ -408,7 +422,9 @@ class Kartograph(object):
 			if len(layerFeatures[id]) == 0: continue # ignore empty layers
 			g = SVG('g', id=id)
 			for feat in layerFeatures[id]:
-				g.append(feat.to_svg(opts['export']['round'], layerOpts[id]['attributes']))
+				fs = feat.to_svg(opts['export']['round'], layerOpts[id]['attributes'])
+				if fs is not None:
+					g.append(fs)
 			svg.append(g)
 
 							

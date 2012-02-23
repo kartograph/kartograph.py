@@ -18,7 +18,7 @@ def main():
 	
 	command = sys.argv[1]
 	
-	if command in ("generate", "kml"):
+	if command in ("generate", "kml", "svg"):
 	
 		from kartograph import Kartograph
 	
