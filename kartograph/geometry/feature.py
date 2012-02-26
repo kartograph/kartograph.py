@@ -1,5 +1,6 @@
 
 from kartograph import errors
+import re
 
 class Feature:
 	"""
@@ -24,13 +25,14 @@ class Feature:
 	def substract_geom(self, geom):
 		self.geometry = self.geom = self.geometry.substract_geom(geom)
 		
-	def to_svg(self, round, attributes=[]):
+	def to_svg(self, round, attributes=[], styles=None):
 		svg = self.geometry.to_svg(round)
 		if svg is None:
 			return None
 		# todo: add data attribtes
 		for cfg in attributes:
 			if 'src' in cfg:
+				tgt = re.sub('(\W|_)+', '-', cfg['tgt'].lower())
 				if cfg['src'] not in self.props:
 					continue
 					#raise errors.KartographError(('attribute not found "%s"'%cfg['src']))
@@ -39,9 +41,10 @@ class Feature:
 				if isinstance(val, str):
 					val = unicode(val, errors='ignore')
 					val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')				
-				svg['data-'+cfg['tgt']] = val
+				svg['data-'+tgt] = val
 				
 			elif 'where' in cfg:
+				# can be used to replace attributes...
 				src = cfg['where']
 				tgt = cfg['set']
 				if len(cfg['equals']) != len(cfg['to']):

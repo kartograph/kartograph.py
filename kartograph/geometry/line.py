@@ -19,7 +19,6 @@ class Line(Geometry):
 			bbox.update(pt)
 		return bbox
 	
-	
 	def project(self, proj):
 		"""
 		projects the line to a map projection
@@ -53,11 +52,11 @@ class Line(Geometry):
 		else: 
 			fmt = '%.'+str(round)+'f'
 			fmt = fmt+','+fmt
-			
+		
 		for pt in self.pts:
 			if path_str == "": path_str = "M"
 			else: path_str += "L"
-			path_str += fmt % pt
+			path_str += fmt % (pt.x, pt.y)
 			
 		path = SVG('path', d=path_str)
 		return path
@@ -72,12 +71,20 @@ class Line(Geometry):
 		return len(self.pts) == 0
 		
 	
-	def unify(self, point_store):
+	def unify(self, point_store, precision):
 		from kartograph.simplify import unify_polygon
-		self.points = unify_polygon(self.pts, point_store)
+		self.pts = unify_polygon(self.pts, point_store, precision)
 
 	
 	def points(self):
 		return [self.pts]
+	
+	
+	def update(self):
+		"""
+		is called after the points of this geometry have been
+		changed from outside this class
+		"""
+		pass
 		
 		

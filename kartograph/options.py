@@ -48,6 +48,8 @@ def parse_layers(opts):
 	g_id = 0
 	s_id = 0
 	for layer in opts['layers']:
+		if 'styles' not in layer:
+			layer['styles'] = {}
 		if 'src' not in layer and 'special' not in layer:
 			raise Error('you need to define the source for your layers')
 		if 'src' in layer:
@@ -61,10 +63,8 @@ def parse_layers(opts):
 				if 'id' not in layer:
 					layer['id'] = 'graticule_'+str(g_id)
 					g_id += 1
-				if 'step' not in layer:
-					layer['step'] = [15,15]
-				elif isinstance(layer['step'], (int,float)):
-					layer['step'] = [layer['step'],layer['step']]
+				if 'fill' not in layer['styles']: layer['styles']['fill'] = 'None'
+				parse_layer_graticule(layer)
 			elif layer['special'] == 'sea':
 				if 'id' not in layer:
 					layer['id'] = 'sea_'+str(s_id)
@@ -160,6 +160,28 @@ def parse_layer_cropping(layer):
 		layer['crop-to'] = False
 		return
 		
+
+def parse_layer_graticule(layer):
+	if 'latitudes' not in layer:
+		layer['latitudes'] = []
+	elif isinstance(layer['latitudes'], (int,float)):
+		step = layer['latitudes']
+		layer['latitudes'] = [0]
+		for lat in _xfrange(step, 90, step):
+			layer['latitudes'] += [lat, -lat]	
+	if 'longitudes' not in layer:
+		layer['longitudes'] = []
+	elif isinstance(layer['longitudes'], (int,float)):
+		step = layer['longitudes']
+		layer['longitudes'] = [0]
+		for lon in _xfrange(step, 180, step):
+			layer['longitudes'] += [lon, -lon]	
+
+	
+def _xfrange(start, stop, step):
+	while (step > 0 and start < stop) or (step < 0 and start > step):
+		yield start
+		start += step
 		
 def parse_bounds(opts):
 	if 'bounds' not in opts: 

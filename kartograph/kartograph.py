@@ -22,7 +22,8 @@ class Kartograph(object):
 		self.prepare_layers(opts)
 		
 		proj = self.get_projection(opts)
-		bounds_poly = self.get_bounds(opts,proj)
+		print proj
+		bounds_poly = self.get_bounds(opts, proj)
 		bbox = bounds_poly.bbox()	
 		
 		view = self.get_view(opts, bbox)
@@ -199,6 +200,7 @@ class Kartograph(object):
 		"""
 		id = layer['id']
 		src = self.layers[id]
+		is_projected = False
 		
 		if 'src' in layer: # regular geodata layer
 			if layer['filter'] is False: 
@@ -226,14 +228,16 @@ class Kartograph(object):
 				bbox = [-180,-90,180,90]
 				if opts['bounds']['mode'] == "bbox":
 					bbox = opts['bounds']['data']
-				step = layer['step']
-				features = src.get_features(step, proj, bbox)
-			elif layer['special'] == "sea":
-				features = src.get_features(view_poly)
+				lats = layer['latitudes']
+				lons = layer['longitudes']
+				features = src.get_features(lats, lons, proj, bbox)
 				
+			elif layer['special'] == "sea":
+				features = src.get_features(proj.sea_shape())	
+				is_projected = True
 		
 		for feature in features:
-			feature.project(proj)
+			if not is_projected: feature.project(proj)
 			feature.project_view(view)
 			
 		return features
@@ -425,6 +429,9 @@ class Kartograph(object):
 				fs = feat.to_svg(opts['export']['round'], layerOpts[id]['attributes'])
 				if fs is not None:
 					g.append(fs)
+			if 'styles' in layerOpts[id]:
+				for prop in layerOpts[id]['styles']:
+					g[prop] = layerOpts[id]['styles'][prop]
 			svg.append(g)
 
 							
@@ -438,8 +445,7 @@ class Kartograph(object):
 		#proj = self.get_projection(opts)
 		#bounds_poly = self.get_bounds(opts,proj)
 		#bbox = bounds_poly.bbox()	
-
-		
+	
 		proj = projections['ll']()
 		view = View()
 		bbox = None
@@ -477,8 +483,7 @@ class Kartograph(object):
 		
 		from lxml import etree
 		open(outfile,'w').write(etree.tostring(kml, pretty_print=True))
-		
-
+	
 
 	def init_kml_canvas(self):
 		from pykml.factory import KML_ElementMaker as KML
@@ -489,7 +494,6 @@ class Kartograph(object):
 		)
 		return kml
 		
-
 
 	def store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
 		"""

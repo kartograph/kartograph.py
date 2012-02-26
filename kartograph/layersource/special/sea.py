@@ -1,5 +1,5 @@
 
-from kartograph.geometry import Line, Feature
+from kartograph.geometry import Line, Feature, MultiPolygon
 from kartograph.layersource.layersource import LayerSource
 
 class SeaLayer(LayerSource):
@@ -9,5 +9,5 @@ class SeaLayer(LayerSource):
 
 	def get_features(self, sea_poly):
 		props = { '__color__':'#d0ddf0' }
-		geom = sea_poly
+		geom = MultiPolygon(sea_poly)
 		return [Feature(geom,props)]

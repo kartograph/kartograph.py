@@ -18,6 +18,7 @@
 
 from base import Proj
 import math 
+from math import radians as rad
 
 class Cylindrical(Proj):
 

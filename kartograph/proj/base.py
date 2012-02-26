@@ -59,14 +59,14 @@ class Proj(object):
 		assert False, 'truncation is not implemented'
 	
 	def world_bounds(self, bbox, llbbox=(-180,-90,180,90)):
-		sea = self.sea_shape(llbbox)	
+		sea = self.sea_shape(llbbox)
 		for x,y in sea:
 			bbox.update((x,y))
 		return bbox		
 
 	def sea_shape(self, llbbox=(-180,-90,180,90)):
 		"""
-		returns multi-polygon contours
+		returns non-projected multi-polygon map bounds
 		"""
 		sea = []
 		out = []
@@ -93,10 +93,11 @@ class Proj(object):
 		for lon in xfrange(minLon, maxLon, lon_step): sea.append((lon, maxLat))
 		for lat in xfrange(maxLat, minLat, lat_step): sea.append((maxLon, lat))
 		for lon in xfrange(maxLon, minLon, lon_step): sea.append((lon, minLat))
+		
 		for s in sea:
 			lon, lat = s
 			out.append(self.project(lon, lat))
-			
+		
 		return [out]	
 		
 	def __str__(self):
