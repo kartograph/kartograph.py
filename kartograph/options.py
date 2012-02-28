@@ -61,13 +61,15 @@ def parse_layers(opts):
 		elif 'special' in layer:
 			if layer['special'] == 'graticule':
 				if 'id' not in layer:
-					layer['id'] = 'graticule_'+str(g_id)
+					layer['id'] = 'graticule'
+					if g_id > 0: layer['id'] += '_'+str(g_id)
 					g_id += 1
 				if 'fill' not in layer['styles']: layer['styles']['fill'] = 'None'
 				parse_layer_graticule(layer)
 			elif layer['special'] == 'sea':
 				if 'id' not in layer:
-					layer['id'] = 'sea_'+str(s_id)
+					layer['id'] = 'sea'
+					if s_id > 0: layer['id'] += '_'+str(s_id)
 					s_id += 1
 				
 					
@@ -86,8 +88,11 @@ def parse_layer_attributes(layer):
 	attrs = []
 	for attr in layer['attributes']:
 		if is_str(attr):
-			attrs.append({'src':attr, 'tgt': attr })
-		else:
+			if isinstance(layer['attributes'], list):
+				attrs.append({'src':attr, 'tgt': attr })
+			elif isinstance(layer['attributes'], dict):
+				attrs.append({'src':attr, 'tgt': layer['attributes'][attr] })
+		elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
 			attrs.append(attr)
 	layer['attributes'] = attrs
 

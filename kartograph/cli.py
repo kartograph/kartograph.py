@@ -30,7 +30,13 @@ def main():
 				opt_src = a
 				if os.path.exists(opt_src):
 					t = open(opt_src, 'r').read()
-					cfg = json.loads(t)
+					if opt_src[-5:].lower() == '.json':
+						cfg = json.loads(t)
+					elif opt_src[-5:].lower() == '.yaml':
+						import yaml
+						cfg = yaml.load(t)
+					else:
+						raise Error('supported config formats are .json and .yaml')
 				else:
 					raise Error('config json not found')
 			elif o in ('-o', '--output'):	
