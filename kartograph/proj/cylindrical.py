@@ -22,173 +22,173 @@ from math import radians as rad
 
 class Cylindrical(Proj):
 
-	def __init__(self, lon0 = 0.0, flip = 0):
-		self.flip = flip
-		self.lon0 = lon0
-		sea = []
-		for lat in range(-90,90): sea.append((-180,lat))
-		for lon in range(-180,180): sea.append((lon, 90))
-		for lat in range(-90,90): sea.append((180,lat*-1))
-		for lon in range(-180,180): sea.append((lon*-1, -90))
-		self.sea = sea
-		
-		if lon0 != 0.0:
-			from Polygon import Polygon as Poly 
-			self.inside_p = Poly(sea)
-			
-	def plot(self, polygon, truncate=True):
-		if self.lon0 != 0.0:
-			polygons = self._shift_polygon(polygon)
-			plotted = []
-			for polygon in polygons:
-				plotted += super(Cylindrical, self).plot(polygon, False)
-			return plotted
-		else:
-			return super(Cylindrical, self).plot(polygon, False)
+    def __init__(self, lon0 = 0.0, flip = 0):
+        self.flip = flip
+        self.lon0 = lon0
+        sea = []
+        for lat in range(-90,90): sea.append((-180,lat))
+        for lon in range(-180,180): sea.append((lon, 90))
+        for lat in range(-90,90): sea.append((180,lat*-1))
+        for lon in range(-180,180): sea.append((lon*-1, -90))
+        self.sea = sea
+        
+        if lon0 != 0.0:
+            from Polygon import Polygon as Poly 
+            self.inside_p = Poly(sea)
+            
+    def plot(self, polygon, truncate=True):
+        if self.lon0 != 0.0:
+            polygons = self._shift_polygon(polygon)
+            plotted = []
+            for polygon in polygons:
+                plotted += super(Cylindrical, self).plot(polygon, False)
+            return plotted
+        else:
+            return super(Cylindrical, self).plot(polygon, False)
 
 
-	def _shift_polygon(self, polygon):
-		"""
-		shifts a polygon according to the origin longitude
-		"""
-		from Polygon import Polygon as Poly 
-		# we need to split and join some polygons
-		poly_coords = []
-		for (lon,lat) in polygon:
-			poly_coords.append((lon-self.lon0,lat))
-		poly = Poly(poly_coords)
-		
-		polygons = []
-		
-		p_in = poly & self.inside_p
-		for i in range(len(p_in)):
-			polygon = []
-			for (lon,lat) in p_in.contour(i):
-				polygon.append((lon,lat))
-			polygons.append(polygon)
-		
-		p_out = poly - p_in
-		for i in range(len(p_out)):
-			polygon = []
-			s = 0
-			c = 0
-			for (lon,lat) in p_out.contour(i):
-				s += lon
-				c += 1
-			left = s/float(c) < -180 # check avg longitude
-			for (lon,lat) in p_out.contour(i):
-				polygon.append((lon+(-360,360)[left],lat))
-			polygons.append(polygon)
-		return polygons
+    def _shift_polygon(self, polygon):
+        """
+        shifts a polygon according to the origin longitude
+        """
+        from Polygon import Polygon as Poly 
+        # we need to split and join some polygons
+        poly_coords = []
+        for (lon,lat) in polygon:
+            poly_coords.append((lon-self.lon0,lat))
+        poly = Poly(poly_coords)
+        
+        polygons = []
+        
+        p_in = poly & self.inside_p
+        for i in range(len(p_in)):
+            polygon = []
+            for (lon,lat) in p_in.contour(i):
+                polygon.append((lon,lat))
+            polygons.append(polygon)
+        
+        p_out = poly - p_in
+        for i in range(len(p_out)):
+            polygon = []
+            s = 0
+            c = 0
+            for (lon,lat) in p_out.contour(i):
+                s += lon
+                c += 1
+            left = s/float(c) < -180 # check avg longitude
+            for (lon,lat) in p_out.contour(i):
+                polygon.append((lon+(-360,360)[left],lat))
+            polygons.append(polygon)
+        return polygons
 
-	def _visible(self, lon, lat):
-		return True	
-		
-	def _truncate(self, x, y):
-		return (x,y)
-		
-	def toXML(self):
-		p = super(Cylindrical, self).toXML()
-		p['lon0'] = str(self.lon0)
-		p['flip'] = str(self.flip)
-		return p
-		
-	def __str__(self):
-		return 'Proj('+self.name+', lon0=%s)' % self.lon0
+    def _visible(self, lon, lat):
+        return True    
+        
+    def _truncate(self, x, y):
+        return (x,y)
+        
+    def toXML(self):
+        p = super(Cylindrical, self).toXML()
+        p['lon0'] = str(self.lon0)
+        p['flip'] = str(self.flip)
+        return p
+        
+    def __str__(self):
+        return 'Proj('+self.name+', lon0=%s)' % self.lon0
 
-	@staticmethod
-	def attributes():
-		return ['lon0','flip']
+    @staticmethod
+    def attributes():
+        return ['lon0','flip']
 
-	def ll(self, lon, lat):
-		if self.flip == 1:
-			return (-lon, -lat)
-		return (lon,lat)
+    def ll(self, lon, lat):
+        if self.flip == 1:
+            return (-lon, -lat)
+        return (lon,lat)
 
 
 class Equirectangular(Cylindrical):
-	"""
-	Equirectangular Projection, aka lonlat, aka plate carree
-	"""
-	def __init__(self, lon0 = 0.0, lat0 = 0.0, flip = 0):
-		self.lat0 = lat0
-		self.phi0 = rad(lat0 * -1)
-		Cylindrical.__init__(self, lon0 = lon0, flip = flip)
-	
-	def project(self, lon, lat):
-		lon,lat = self.ll(lon,lat)
-		return (lon * math.cos(self.phi0)*1000, lat*-1*1000)
+    """
+    Equirectangular Projection, aka lonlat, aka plate carree
+    """
+    def __init__(self, lon0 = 0.0, lat0 = 0.0, flip = 0):
+        self.lat0 = lat0
+        self.phi0 = rad(lat0 * -1)
+        Cylindrical.__init__(self, lon0 = lon0, flip = flip)
+    
+    def project(self, lon, lat):
+        lon,lat = self.ll(lon,lat)
+        return (lon * math.cos(self.phi0)*1000, lat*-1*1000)
 
 
 class CEA(Cylindrical):
-	"""
-	Cylindrical Equal Area Projection
-	"""
-	def __init__(self, lat0 = 0.0, lon0 = 0.0, lat1 = 0.0, flip = 0):
-		self.lat0 = lat0
-		self.lat1 = lat1
-		self.phi0 = rad(lat0 * -1)
-		self.phi1 = rad(lat1 * -1)
-		self.lam0 = rad(lon0)
-		Cylindrical.__init__(self, lon0 = lon0, flip = flip)
-		
-	def project(self, lon, lat):
-		lon,lat = self.ll(lon, lat)
-		lam = rad(lon)
-		phi = rad(lat*-1)
-		x = (lam) * math.cos(self.phi1) * 1000
-		y = math.sin(phi) / math.cos(self.phi1) * 1000
-		return (x,y)
-		
-	def toXML(self):
-		p = super(CEA, self).toXML()
-		p['lat1'] = str(self.lat1)
-		return p
-		
-	@staticmethod
-	def attributes():
-		return ['lon0','lat1', 'flip']
+    """
+    Cylindrical Equal Area Projection
+    """
+    def __init__(self, lat0 = 0.0, lon0 = 0.0, lat1 = 0.0, flip = 0):
+        self.lat0 = lat0
+        self.lat1 = lat1
+        self.phi0 = rad(lat0 * -1)
+        self.phi1 = rad(lat1 * -1)
+        self.lam0 = rad(lon0)
+        Cylindrical.__init__(self, lon0 = lon0, flip = flip)
+        
+    def project(self, lon, lat):
+        lon,lat = self.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat*-1)
+        x = (lam) * math.cos(self.phi1) * 1000
+        y = math.sin(phi) / math.cos(self.phi1) * 1000
+        return (x,y)
+        
+    def toXML(self):
+        p = super(CEA, self).toXML()
+        p['lat1'] = str(self.lat1)
+        return p
+        
+    @staticmethod
+    def attributes():
+        return ['lon0','lat1', 'flip']
 
-		
-	def __str__(self):
-		return 'Proj('+self.name+', lon0=%s, lat1=%s)' % (self.lon0, self.lat1)
+        
+    def __str__(self):
+        return 'Proj('+self.name+', lon0=%s, lat1=%s)' % (self.lon0, self.lat1)
 
 
 class GallPeters(CEA):
-	def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
-		CEA.__init__(self, lon0=lon0, lat0=0, lat1=45, flip = flip)
+    def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
+        CEA.__init__(self, lon0=lon0, lat0=0, lat1=45, flip = flip)
 
 
 class HoboDyer(CEA):
-	def __init__(self, lat0=0.0, lon0=0.0, flip = 0):
-		CEA.__init__(self, lon0=lon0, lat0=lat0, lat1=37.5, flip = flip)
+    def __init__(self, lat0=0.0, lon0=0.0, flip = 0):
+        CEA.__init__(self, lon0=lon0, lat0=lat0, lat1=37.5, flip = flip)
 
 
 class Behrmann(CEA):
-	def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
-		CEA.__init__(self, lat1=30, lat0=lat0, lon0=lon0, flip = flip)
+    def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
+        CEA.__init__(self, lat1=30, lat0=lat0, lon0=lon0, flip = flip)
 
 
 class Balthasart(CEA):
-	def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
-		CEA.__init__(self, lat1=50, lat0=lat0, lon0=lon0, flip = flip)
+    def __init__(self, lat0 = 0.0, lon0=0.0, flip = 0):
+        CEA.__init__(self, lat1=50, lat0=lat0, lon0=lon0, flip = flip)
 
 
-class Mercator(Cylindrical):	
-	def __init__(self, lon0=0.0, lat0=0.0, flip = 0):
-		Cylindrical.__init__(self, lon0=lon0, flip = flip)
-		self.minLat = -85
-		self.maxLat = 85
-	
-	def project(self, lon, lat):
-		lon,lat = self.ll(lon, lat)
-		lam = rad(lon)
-		phi = rad(lat*-1)
-		x = lam * 1000
-		y = math.log((1+math.sin(phi)) / math.cos(phi)) * 1000
-		return (x,y)
+class Mercator(Cylindrical):    
+    def __init__(self, lon0=0.0, lat0=0.0, flip = 0):
+        Cylindrical.__init__(self, lon0=lon0, flip = flip)
+        self.minLat = -85
+        self.maxLat = 85
+    
+    def project(self, lon, lat):
+        lon,lat = self.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat*-1)
+        x = lam * 1000
+        y = math.log((1+math.sin(phi)) / math.cos(phi)) * 1000
+        return (x,y)
 
 
 class LonLat(Cylindrical):
-	def project(self, lon, lat):
-		return (lon,lat)
+    def project(self, lon, lat):
+        return (lon,lat)

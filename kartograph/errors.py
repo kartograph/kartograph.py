@@ -3,16 +3,16 @@ error classes for kartograph
 """
 
 class KartographError(Exception):
-	"""Base class for exceptions in this module."""
-	pass
-	
+    """Base class for exceptions in this module."""
+    pass
+    
 class KartographOptionParseError(KartographError):
     pass    
 
 
 class KartographShapefileAttributesError(KartographError):
-	pass
-	
-	
+    pass
+    
+    
 class KartographLayerSourceError(KartographError):
-	pass
+    pass
