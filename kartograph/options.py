@@ -101,12 +101,14 @@ def parse_layer_filter(layer):
     if 'filter' not in layer:
         layer['filter'] = False
         return
+    return  # todo: check valid filter syntax (recursivly, place code in filter.py)
     filter = layer['filter']
-    if 'type' not in filter: filter['type'] = 'include'
-    if 'attribute' not in filter: 
+    if 'type' not in filter:
+        filter['type'] = 'include'
+    if 'attribute' not in filter:
         raise Error('layer filter must define an attribute to filter on')
     if 'equals' in filter:
-        if isinstance(filter['equals'], (str,unicode,int,float)): 
+        if isinstance(filter['equals'], (str, unicode, int, float)):
             filter['equals'] = [filter['equals']]
     elif 'greater-than' in filter:
         try:
@@ -244,7 +246,7 @@ def parse_bounds(opts):
             except:
                 raise Error('min_area must be an integer or float')
         else:
-            data['min_area'] = 0
+            data['min-area'] = 0
                 
 
 def parse_export(opts):
