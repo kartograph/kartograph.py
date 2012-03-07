@@ -1,5 +1,5 @@
 """
-    kartograph - a svg mapping library 
+    kartograph - a svg mapping library
     Copyright (C) 2011  Gregor Aisch
 
     This program is free software: you can redistribute it and/or modify
@@ -51,55 +51,54 @@ projections['eda'] = EquidistantAzimuthal
 projections['aitoff'] = Aitoff
 
 from conic import *
-        
+
 projections['lcc'] = LCC
 
 
 class Proj4(Proj):
-    
+
     def __init__(self, projstr):
         import pyproj
         self.proj = pyproj.Proj(projstr)
-        
+
     def project(self, lon, lat):
-        lon,lat = self.ll(lon, lat)
-        x,y = self.proj(lon, lat)
-        return (x,y*-1)
+        lon, lat = self.ll(lon, lat)
+        x, y = self.proj(lon, lat)
+        return (x, y * -1)
 
 
 class LCC__(Proj4):
-    
+
     def __init__(self, lat0=0, lon0=0, lat1=28, lat2=30):
         Proj4.__init__(self, '+proj=lcc +lat_0=%f +lon_0=%f +lat_1=%f +lat_2=%f' % (lat0, lon0, lat1, lat2))
-        
+
     def _visible(self, lon, lat):
         return True
-        
-    def _truncate(self, x,y):
-        return (x,y)
 
+    def _truncate(self, x, y):
+        return (x, y)
 
 
 for pjname in projections:
     projections[pjname].name = pjname
-        
-        
+
+
 if __name__ == '__main__':
     import sys
     # some class testing
     #p = LAEA(52.0,10.0)
     #x,y = p.project(50,5)
     #assert (round(x,2),round(y,2)) == (3962799.45, -2999718.85), 'LAEA proj error'
-    
+
     print Proj.fromXML(Robinson(lat0=3, lon0=4).toXML())
-    
+
     Robinson(lat0=3, lon0=4)
-    
+
     for pj in projections:
         Proj = projections[pj]
         try:
             proj = Proj(lat0=34.0, lon0=60)
-            proj.project(0,0)
+            proj.project(0, 0)
             proj.world_bounds()
             print proj.toXML()
         except:
