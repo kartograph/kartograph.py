@@ -246,3 +246,34 @@ class Loximuthal(PseudoCylindrical):
     @staticmethod
     def attributes():
         return ['lon0', 'lat0', 'flip']
+
+
+class CantersModifiedSinusoidalI(PseudoCylindrical):
+    """
+    Canters, F. (2002) Small-scale Map projection Design. p. 218-219.
+    Modified Sinusoidal, equal-area.
+
+    implementation borrowed from
+    http://cartography.oregonstate.edu/temp/AdaptiveProjection/src/projections/Canters1.js
+    """
+
+    def __init__(self, lon0=0.0, flip=0):
+        PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.C1 = 1.1966
+        self.C3 = -0.1290
+        self.C3x3 = 3 * self.C3
+        self.C5 = -0.0076
+        self.C5x5 = 5 * self.C5
+
+    def project(self, lon, lat):
+        me = self
+        lon, lat = me.ll(lon, lat)
+
+        lon = rad(lon)
+        lat = rad(lat)
+
+        y2 = lat * lat
+        y4 = y2 * y2
+        x = 1000 * lon * math.cos(lat) / (me.C1 + me.C3x3 * y2 + me.C5x5 * y4)
+        y = 1000 * lat * (me.C1 + me.C3 * y2 + me.C5 * y4)
+        return (x, y * -1)
