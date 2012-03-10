@@ -1,6 +1,9 @@
 
 from mpoint import MPoint
 
+"""
+the whole point of the unification step is to convert all points into unique MPoint instances
+"""
 
 def create_point_store():
     """ creates a new point_store """
@@ -8,14 +11,14 @@ def create_point_store():
     return point_store
 
 
-def unify_polygons(polygons, point_store, precision=None):
+def unify_polygons(polygons, point_store, precision=None, feature=None):
     out = []
     for polygon in polygons:
-        out.append(unify_polygon(polygon, point_store, precision))
+        out.append(unify_polygon(polygon, point_store, precision=precision, feature=feature))
     return out
 
 
-def unify_polygon(polygon, point_store, precision=None):
+def unify_polygon(polygon, point_store, precision=None, feature=None):
     """
     Replaces duplicate points with an instance of the
     same point
@@ -46,5 +49,7 @@ def unify_polygon(polygon, point_store, precision=None):
             point = pt
             point_store['kept'] += 1
             point_store[pid] = pt
+
+        point.features.add(feature)
         new_points.append(point)
     return new_points

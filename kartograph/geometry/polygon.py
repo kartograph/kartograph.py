@@ -223,6 +223,13 @@ class MultiPolygon(SolidGeometry):
 
         return poly
 
+    def to_line_segments(self):
+        """ splits the geometry into several line segments """
+        self.lines = []
+
+    def from_line_segments(self):
+        self.lines = []
+
 
 class Polygon(SolidGeometry):
 
