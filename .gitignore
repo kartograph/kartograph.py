@@ -1,2 +1,4 @@
 *.pyc
 build/
+kartograph.py.egg-info/
+dist/
