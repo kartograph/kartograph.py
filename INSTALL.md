@@ -78,11 +78,6 @@ and copy the folder "Polygon" into
 
 /Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/
 
-### SvgFig
-
-Follow instructions here:
-
-http://code.google.com/p/svgfig/wiki/HowToInstall
 
 ## Download kartograph.py
 
