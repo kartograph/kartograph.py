@@ -25,9 +25,9 @@ class Feature:
     def substract_geom(self, geom):
         self.geometry = self.geom = self.geometry.substract_geom(geom)
         
-    def to_svg(self, round, attributes=[], styles=None):
-        svg = self.geometry.to_svg(round)
-        if svg is None:
+    def to_svg(self, svg, round, attributes=[], styles=None):
+        node = self.geometry.to_svg(svg, round)
+        if node is None:
             return None
         # todo: add data attribtes
         for cfg in attributes:
@@ -40,9 +40,9 @@ class Feature:
                 import unicodedata
                 if isinstance(val, str):
                     val = unicode(val, errors='ignore')
-                    val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')                
-                svg['data-'+tgt] = val
-                
+                    val = unicodedata.normalize('NFKD', val).encode('ascii', 'ignore')
+                node.setAttribute('data-' + tgt, val)
+
             elif 'where' in cfg:
                 # can be used to replace attributes...
                 src = cfg['where']
@@ -50,13 +50,13 @@ class Feature:
                 if len(cfg['equals']) != len(cfg['to']):
                     raise errors.KartographError('attributes: "equals" and "to" arrays must be of same length')
                 for i in range(len(cfg['equals'])):
-                    if self.props[src] == cfg['equals'][i]:    
-                        svg['data-'+tgt] = cfg['to'][i]
-                
+                    if self.props[src] == cfg['equals'][i]:
+                        node.setAttribute('data-' + tgt, cfg['to'][i])
+
         if '__color__' in self.props:
-            svg['fill'] = self.props['__color__']
-        return svg
-        
+            node.setAttribute('fill', self.props['__color__'])
+        return node
+
     def to_kml(self, round, attributes=[]):
         path = self.geometry.to_kml(round)
         from pykml.factory import KML_ElementMaker as KML

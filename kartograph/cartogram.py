@@ -1,6 +1,8 @@
 
 """
 computes a circle cartogram for a given svg map + data file
+
+important: this class still needs to be adopted to xml.dom.minidom
 """
 class Cartogram:
 
@@ -9,7 +11,7 @@ class Cartogram:
         data = self.load_csv(csv_src, key, value)
         circles = []
         for id in regions:
-            cx,cy = regions[id]
+            cx, cy = regions[id]
             val = data[id]
             circles.append(Circle(cx, cy, id, val))
         
@@ -31,10 +33,10 @@ class Cartogram:
         
         
     def load_regions_from_svg(self, url, attr):
-        import svgfig
-        svg = svgfig.load(url)
+        import svg as svgdoc
+        svg = svgdoc.Document.load(url)
         self.svg = svg
-        g = svg[2]
+        g = svg.
         coords = {}
         for path in g[:]:
             path_str = path['d']

@@ -42,11 +42,10 @@ class Line(Geometry):
         return Line(pts)
         
     
-    def to_svg(self, round):
+    def to_svg(self, svg, round):
         """
         constructs a svg representation of this line
         """
-        from svgfig import SVG
         path_str = ""
         if round is False: fmt = '%f,%f'
         else: 
@@ -58,7 +57,7 @@ class Line(Geometry):
             else: path_str += "L"
             path_str += fmt % (pt.x, pt.y)
             
-        path = SVG('path', d=path_str)
+        path = svg.node('path', d=path_str)
         return path
         
     

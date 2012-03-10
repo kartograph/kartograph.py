@@ -55,7 +55,7 @@ class Kartograph(object):
         self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
 
         if outfile is None:
-            svg.firefox()
+            svg.preview()
         else:
             svg.save(outfile)
 
@@ -225,38 +225,28 @@ class Kartograph(object):
         """
         prepare a blank new svg file
         """
-        from svgfig import canvas, SVG
+        import svg as svgdoc
 
         w = view.width
         h = view.height + 2
 
-        svg = canvas(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
-
+        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
+        defs = svg.node('defs', svg.root)
+        style = svg.node('style', defs, type='text/css')
         css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
+        svg.cdata(css, style)
+        metadata = svg.node('metadata', svg.root)
+        views = svg.node('views', metadata)
+        view = svg.node('view', views, padding=str(opts['bounds']['padding']), w=w, h=h)
 
-        #if options.graticule:
-        #    css += '#graticule path { fill: none; stroke-width:0.25pt;  } #graticule .equator { stroke-width: 0.5pt } '
-
-        svg.append(SVG('defs', SVG('style', css, type='text/css')))
-
-        meta = SVG('metadata')
-        views = SVG('views')
-        view = SVG('view', padding=str(opts['bounds']['padding']), w=w, h=h)
-        proj_ = proj.toXML()
-        bbox = SVG('bbox', x=round(bbox.left, 2), y=round(bbox.top, 2), w=round(bbox.width, 2), h=round(bbox.height, 2))
+        svg.node('proj', view, **proj.attrs())
+        bbox = svg.node('bbox', view, x=round(bbox.left, 2), y=round(bbox.top, 2), w=round(bbox.width, 2), h=round(bbox.height, 2))
 
         ll = [-180, -90, 180, 90]
         if opts['bounds']['mode'] == "bbox":
             ll = opts['bounds']['data']
-        llbbox = SVG('llbbox', lon0=ll[0], lon1=ll[2], lat0=ll[1], lat1=ll[3])
+        svg.node('llbbox', view, lon0=ll[0], lon1=ll[2], lat0=ll[1], lat1=ll[3])
 
-        views.append(view)
-        view.append(proj_)
-        view.append(bbox)
-        view.append(llbbox)
-
-        meta.append(views)
-        svg.append(meta)
         return svg
 
     def simplify_layers(self, layers, layerFeatures, layerOpts):
@@ -390,21 +380,18 @@ class Kartograph(object):
         """
         store features in svg
         """
-        from svgfig import SVG
-
         for id in layers:
             print id
             if len(layerFeatures[id]) == 0:
                 continue  # ignore empty layers
-            g = SVG('g', id=id)
+            g = svg.node('g', svg.root, id=id)
             for feat in layerFeatures[id]:
-                fs = feat.to_svg(opts['export']['round'], layerOpts[id]['attributes'])
-                if fs is not None:
-                    g.append(fs)
+                node = feat.to_svg(svg, opts['export']['round'], layerOpts[id]['attributes'])
+                if node is not None:
+                    g.appendChild(node)
             if 'styles' in layerOpts[id]:
                 for prop in layerOpts[id]['styles']:
-                    g[prop] = layerOpts[id]['styles'][prop]
-            svg.append(g)
+                    g.setAttribute(prop, str(layerOpts[id]['styles'][prop]))
 
     def generate_kml(self, opts, outfile=None):
         """
@@ -465,7 +452,7 @@ class Kartograph(object):
 
     def store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
         """
-        store features in svg
+        store features in kml (projected to WGS84 latlon)
         """
         from pykml.factory import KML_ElementMaker as KML
 

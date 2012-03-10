@@ -26,7 +26,7 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["pyshp", "polygon", "svgfig", "pyyaml"],
+    install_requires=["pyshp", "polygon", "pyyaml"],
     tests_require=[],
     entry_points={
         'console_scripts': [

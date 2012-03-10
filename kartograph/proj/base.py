@@ -106,10 +106,8 @@ class Proj(object):
     def __str__(self):
         return 'Proj(' + self.name + ')'
 
-    def toXML(self):
-        from svgfig import SVG
-        p = SVG('proj', id=self.name)
-        return p
+    def attrs(self):
+        return dict(id=self.name)
 
     @staticmethod
     def attributes():
@@ -129,4 +127,3 @@ class Proj(object):
                     args[prop[0]] = float(val)
             return ProjClass(**args)
         raise Exception("could not restore projection from xml")
-
