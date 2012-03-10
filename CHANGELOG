@@ -5,3 +5,4 @@ inital version
 0.1.1
 -----
 * removed dependency to svgfig
+* added setup.py
