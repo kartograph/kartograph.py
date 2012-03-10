@@ -39,12 +39,12 @@ class Conic(Proj):
     def _truncate(self, x, y):
         return (x, y)
 
-    def toXML(self):
-        p = super(Conic, self).toXML()
-        p['lon0'] = str(self.lon0)
-        p['lat0'] = str(self.lat0)
-        p['lat1'] = str(self.lat1)
-        p['lat2'] = str(self.lat2)
+    def attrs(self):
+        p = super(Conic, self).attrs()
+        p['lon0'] = self.lon0
+        p['lat0'] = self.lat0
+        p['lat1'] = self.lat1
+        p['lat2'] = self.lat2
         return p
 
     @staticmethod

@@ -238,9 +238,9 @@ class Loximuthal(PseudoCylindrical):
         y = 1000 * (phi - self.phi0)
         return (x, y * -1)
 
-    def toXML(self):
-        p = super(Loximuthal, self).toXML()
-        p['lat0'] = str(self.lat0)
+    def attrs(self):
+        p = super(Loximuthal, self).attrs()
+        p['lat0'] = self.lat0
         return p
 
     @staticmethod

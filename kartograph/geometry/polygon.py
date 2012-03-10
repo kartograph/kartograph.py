@@ -138,11 +138,10 @@ class MultiPolygon(SolidGeometry):
         poly = self.poly - geom.poly
         return MultiPolygon.fromPoly(poly)
 
-    def to_svg(self, round):
+    def to_svg(self, svg, round):
         """
         constructs a svg representation of this polygon
         """
-        from svgfig import SVG
         path_str = ""
         if round is False:
             fmt = '%f,%f'
@@ -172,7 +171,7 @@ class MultiPolygon(SolidGeometry):
         if path_str == "":
             return None
 
-        path = SVG('path', d=path_str)
+        path = svg.node('path', d=path_str)
         return path
 
     def is_empty(self):
