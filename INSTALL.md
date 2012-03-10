@@ -7,13 +7,16 @@ Tested on Mac OS 10.6.8
 
 1. Download kartograph.py
 
-	git clone https://github.com/kartograph/kartograph.py kartograph
+```bash
+git clone https://github.com/kartograph/kartograph.py kartograph
+```
 
 2. Use setup.py to install Kartograph + required libraries
 
-	cd kartograph
-	sudo python setup.py intstall
-
+```bash
+cd kartograph
+sudo python setup.py intstall
+```
 
 ## Test installation
 
