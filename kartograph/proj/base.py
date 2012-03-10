@@ -59,7 +59,7 @@ class Proj(object):
 
     def world_bounds(self, bbox, llbbox=(-180, -90, 180, 90)):
         sea = self.sea_shape(llbbox)
-        for x, y in sea:
+        for x, y in sea[0]:
             bbox.update((x, y))
         return bbox
 
@@ -119,12 +119,12 @@ class Proj(object):
         return []
 
     @staticmethod
-    def fromXML(xml):
+    def fromXML(xml, projections):
         id = xml['id']
         if id in projections:
             ProjClass = projections[id]
             args = {}
-            for (prop,val) in xml:
+            for (prop, val) in xml:
                 if prop[0] != "id":
                     args[prop[0]] = float(val)
             return ProjClass(**args)

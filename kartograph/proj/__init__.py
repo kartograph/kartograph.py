@@ -90,17 +90,19 @@ if __name__ == '__main__':
     #p = LAEA(52.0,10.0)
     #x,y = p.project(50,5)
     #assert (round(x,2),round(y,2)) == (3962799.45, -2999718.85), 'LAEA proj error'
+    from kartograph.geometry import BBox
 
-    print Proj.fromXML(Robinson(lat0=3, lon0=4).toXML())
+    print Proj.fromXML(Robinson(lat0=3, lon0=4).toXML(), projections)
 
     Robinson(lat0=3, lon0=4)
 
     for pj in projections:
         Proj = projections[pj]
+        bbox = BBox()
         try:
-            proj = Proj(lat0=34.0, lon0=60)
+            proj = Proj(lon0=60)
             proj.project(0, 0)
-            proj.world_bounds()
+            proj.world_bounds(bbox)
             print proj.toXML()
         except:
             print 'Error', pj
