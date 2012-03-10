@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
 long_desc = """
+Open Source Python library for generating semantic SVG maps.
 """
 
 
 setup(
     name='kartograph.py',
-    version='0.1',
-    description="",
+    version='0.1.0',
+    description="Open Source Python library for generating semantic SVG maps",
     long_description=long_desc,
     classifiers=[
         "Development Status :: 3 - Alpha",
