@@ -101,8 +101,8 @@ if __name__ == '__main__':
         bbox = BBox()
         try:
             proj = Proj(lon0=60)
-            proj.project(0, 0)
-            proj.world_bounds(bbox)
+            print proj.project(0, 0)
+            print proj.world_bounds(bbox)
             print proj.toXML()
         except:
             print 'Error', pj
