@@ -1,8 +1,13 @@
-0.1.0
------
-inital version
+0.1.2
+----
+* added non-interrupted goode-homolosine projection 
 
 0.1.1
 -----
 * removed dependency to svgfig
 * added setup.py
+
+0.1.0
+-----
+inital version
+

@@ -149,8 +149,8 @@ class Sinusoidal(PseudoCylindrical):
         lon, lat = self.ll(lon, lat)
         lam = rad(lon)
         phi = rad(lat * -1)
-        x = lam * math.cos(phi)
-        y = phi
+        x = 1032 * lam * math.cos(phi)
+        y = 1032 * phi
         return (x, y)
 
 
@@ -198,6 +198,23 @@ class Mollweide(PseudoCylindrical):
         x = 1000 * self.cx * lam * math.cos(phi)
         y = 1000 * self.cy * math.sin(phi)
         return (x, y * -1)
+
+
+class GoodeHomolosine(PseudoCylindrical):
+
+    def __init__(self, lon0=0, flip=0):
+        self.lat1 = 41.737
+        PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.p1 = Mollweide()
+        self.p0 = Sinusoidal()
+
+    def project(self, lon, lat):
+        lon, lat = self.ll(lon, lat)
+        #lon = me.clon(lon)
+        if abs(lat) > self.lat1:
+            return self.p1.project(lon, lat)
+        else:
+            return self.p0.project(lon, lat)
 
 
 class WagnerIV(Mollweide):
