@@ -296,6 +296,40 @@ class CantersModifiedSinusoidalI(PseudoCylindrical):
         return (x, y * -1)
 
 
+class Hatano(PseudoCylindrical):
+
+    def __init__(me, lon0=0, flip=0):
+        PseudoCylindrical.__init__(me, lon0=lon0, flip=flip)
+        me.NITER = 20
+        me.EPS = 1e-7
+        me.ONETOL = 1.000001
+        me.CN = 2.67595
+        me.CS = 2.43763
+        me.RCN = 0.37369906014686373063
+        me.RCS = 0.41023453108141924738
+        me.FYCN = 1.75859
+        me.FYCS = 1.93052
+        me.RYCN = 0.56863737426006061674
+        me.RYCS = 0.51799515156538134803
+        me.FXC = 0.85
+        me.RXC = 1.17647058823529411764
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+        c = math.sin(phi) * (me.CN, me.CS)[phi < 0.0]
+        for i in range(me.NITER, 0, -1):
+            th1 = (phi + math.sin(phi) - c) / (1.0 + math.cos(phi))
+            phi -= th1
+            if abs(th1) < me.EPS:
+                break
+        phi *= 0.5
+        x = 1000 * me.FXC * lam * math.cos(phi)
+        y = 1000 * math.sin(phi) * (me.FYCN, me.FYCS)[phi < 0.0]
+        return (x, y * -1)
+
+
 class Aitoff(PseudoCylindrical):
     """
     Aitoff projection
