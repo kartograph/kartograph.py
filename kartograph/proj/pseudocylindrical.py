@@ -294,3 +294,39 @@ class CantersModifiedSinusoidalI(PseudoCylindrical):
         x = 1000 * lon * math.cos(lat) / (me.C1 + me.C3x3 * y2 + me.C5x5 * y4)
         y = 1000 * lat * (me.C1 + me.C3 * y2 + me.C5 * y4)
         return (x, y * -1)
+
+
+class Aitoff(PseudoCylindrical):
+    """
+    Aitoff projection
+
+    implementation taken from
+    Snyder, Map projections - A working manual
+    """
+    def __init__(self, lon0=0, flip=0):
+        PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.COSPHI1 = 0.636619772367581343
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+        c = 0.5 * lam
+        d = math.acos(math.cos(phi) * math.cos(c))
+        if d != 0:
+            y = 1.0 / math.sin(d)
+            x = 2.0 * d * math.cos(phi) * math.sin(c) * y
+            y *= d * math.sin(phi)
+        else:
+            x = y = 0
+        if me.winkel:
+            x = (x + lam * me.COSPHI1) * 0.5
+            y = (y + phi) * 0.5
+        return (x * 1000, y * -1000)
+
+
+class Winkel3(Aitoff):
+
+    def __init__(self, lon0=0, flip=0):
+        Aitoff.__init__(self, lon0=lon0, flip=flip)
+        self.winkel = True

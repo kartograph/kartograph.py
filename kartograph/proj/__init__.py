@@ -42,6 +42,8 @@ projections['wagner5'] = WagnerV
 projections['loximuthal'] = Loximuthal
 projections['canters1'] = CantersModifiedSinusoidalI
 projections['goodehomolosine'] = GoodeHomolosine
+projections['aitoff'] = Aitoff
+projections['winkel3'] = Winkel3
 
 from azimuthal import *
 

@@ -295,21 +295,3 @@ class EquidistantAzimuthal(Azimuthal):
     def _visible(self, lon, lat):
         return True
 
-
-
-class Aitoff(EquidistantAzimuthal):
-    """
-    Aitoff Azimuthal projection
-
-    implementation taken from
-    Snyder, Map projections - A working manual
-    """
-    def __init__(self,lat0=0.0,lon0=0.0):
-        self.cosphi = 1
-        EquidistantAzimuthal.__init__(self, lat0=0, lon0=lon0)
-
-    def project(self, lon, lat):
-        x,y = EquidistantAzimuthal.project(self, lon, lat)
-        y *= .5
-        return (x,y)
-
