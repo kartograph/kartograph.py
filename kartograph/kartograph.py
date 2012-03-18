@@ -148,7 +148,6 @@ class Kartograph(object):
                 bbox.join(fbbox)
 
         bbox.inflate(bbox.width * bnds['padding'])
-        print bbox
         return bbox_to_polygon(bbox)
 
     def get_bounds_polygons(self, opts):
@@ -233,7 +232,7 @@ class Kartograph(object):
         w = view.width
         h = view.height + 2
 
-        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7pt; stroke-linejoin: round; stroke:#000; fill:#f3f3f0;')
+        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7px; stroke-linejoin: round; stroke:#000; fill:#f6f3f0;')
         defs = svg.node('defs', svg.root)
         style = svg.node('style', defs, type='text/css')
         css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '

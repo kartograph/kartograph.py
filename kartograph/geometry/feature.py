@@ -2,6 +2,7 @@
 from kartograph import errors
 import re
 
+
 class Feature:
     """
     feature = geometry + properties
@@ -9,22 +10,22 @@ class Feature:
     def __init__(self, geometry, properties):
         self.geometry = self.geom = geometry
         self.properties = self.props = properties
-        
+
     def __repr__(self):
         return 'Feature()'
-        
+
     def project(self, proj):
         self.geometry = self.geom = self.geometry.project(proj)
-        
+
     def project_view(self, view):
         self.geometry = self.geom = self.geometry.project_view(view)
-    
+
     def crop_to(self, view_bounds):
         self.geometry = self.geom = self.geometry.crop_to(view_bounds)
-        
+
     def substract_geom(self, geom):
         self.geometry = self.geom = self.geometry.substract_geom(geom)
-        
+
     def to_svg(self, svg, round, attributes=[], styles=None):
         node = self.geometry.to_svg(svg, round)
         if node is None:
@@ -41,6 +42,8 @@ class Feature:
                 if isinstance(val, str):
                     val = unicode(val, errors='ignore')
                     val = unicodedata.normalize('NFKD', val).encode('ascii', 'ignore')
+                if isinstance(val, (int, float)):
+                    val = str(val)
                 node.setAttribute('data-' + tgt, val)
 
             elif 'where' in cfg:
@@ -60,14 +63,14 @@ class Feature:
     def to_kml(self, round, attributes=[]):
         path = self.geometry.to_kml(round)
         from pykml.factory import KML_ElementMaker as KML
-        
+
         pm = KML.Placemark(
             KML.name(self.props[attributes[0]['src']]),
             path
         )
-        
+
         xt = KML.ExtendedData()
-        
+
         for cfg in attributes:
             if 'src' in cfg:
                 if cfg['src'] not in self.props:
@@ -77,7 +80,7 @@ class Feature:
                 import unicodedata
                 if isinstance(val, str):
                     val = unicode(val, errors='ignore')
-                    val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')                
+                    val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')
                 xt.append(KML.Data(
                     KML.value(val),
                     name=cfg['tgt']
@@ -88,15 +91,15 @@ class Feature:
                 if len(cfg['equals']) != len(cfg['to']):
                     raise errors.KartographError('attributes: "equals" and "to" arrays must be of same length')
                 for i in range(len(cfg['equals'])):
-                    if self.props[src] == cfg['equals'][i]:    
+                    if self.props[src] == cfg['equals'][i]:
                         #svg['data-'+tgt] = cfg['to'][i]
                         xt.append(KML.Data(
                             KML.value(cfg['to'][i]),
                             name=tgt
                         ))
-        pm.append(xt)        
-        
+        pm.append(xt)
+
         return pm
-        
+
     def is_empty(self):
         return self.geom.is_empty()
