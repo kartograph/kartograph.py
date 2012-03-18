@@ -41,6 +41,9 @@ class Document(object):
         f.write(self.doc.toxml())
         f.close()
 
+    def tostring(self):
+        return self.doc.toxml()
+
     @staticmethod
     def load(filename):
         from xml.dom.minidom import parse

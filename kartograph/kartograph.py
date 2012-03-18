@@ -15,7 +15,7 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None):
+    def generate(self, opts, outfile=None, preview=True):
         """
         generates svg map
         """
@@ -55,7 +55,10 @@ class Kartograph(object):
         self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
 
         if outfile is None:
-            svg.preview()
+            if preview:
+                svg.preview()
+            else:
+                return svg.tostring()
         else:
             svg.save(outfile)
 
