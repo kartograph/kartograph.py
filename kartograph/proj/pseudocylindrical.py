@@ -339,6 +339,7 @@ class Aitoff(PseudoCylindrical):
     """
     def __init__(self, lon0=0, flip=0):
         PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.winkel = False
         self.COSPHI1 = 0.636619772367581343
 
     def project(me, lon, lat):
