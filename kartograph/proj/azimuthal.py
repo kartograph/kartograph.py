@@ -32,38 +32,38 @@ class Azimuthal(Proj):
         self.elevation0 = self.to_elevation(lat0)
         self.azimuth0 = self.to_azimuth(lon0)
 
-    def to_elevation(self,latitude):
-        return ((latitude + 90.0) / 180.0) * math.pi - math.pi/2
+    def to_elevation(self, latitude):
+        return ((latitude + 90.0) / 180.0) * math.pi - math.pi / 2.0
 
-    def to_azimuth(self,longitude):
-        return ((longitude + 180.0) / 360.0) * math.pi*2 - math.pi
+    def to_azimuth(self, longitude):
+        return ((longitude + 180.0) / 360.0) * math.pi * 2 - math.pi
 
     def _visible(self, lon, lat):
         elevation = self.to_elevation(lat)
         azimuth = self.to_azimuth(lon)
         # work out if the point is visible
-        cosc = math.sin(elevation)*math.sin(self.elevation0)+math.cos(self.elevation0)*math.cos(elevation)*math.cos(azimuth-self.azimuth0)
+        cosc = math.sin(elevation) * math.sin(self.elevation0) + math.cos(self.elevation0) * math.cos(elevation) * math.cos(azimuth - self.azimuth0)
         return cosc >= 0.0
 
     def _truncate(self, x, y):
-        theta = math.atan2(y-self.r,x-self.r)
+        theta = math.atan2(y - self.r, x - self.r)
         x1 = self.r + self.r * math.cos(theta)
         y1 = self.r + self.r * math.sin(theta)
-        return (x1,y1)
+        return (x1, y1)
 
-    def world_bounds(self, bbox, llbbox=(-180,-90,180,90)):
-        if llbbox == (-180,-90,180,90):
-            d = self.r*2
-            bbox.update((0,0))
-            bbox.update((d,d))
+    def world_bounds(self, bbox, llbbox=(-180, -90, 180, 90)):
+        if llbbox == (-180, -90, 180, 90):
+            d = self.r * 2
+            bbox.update((0, 0))
+            bbox.update((d, d))
         else:
             bbox = super(Azimuthal, self).world_bounds(bbox, llbbox)
         return bbox
 
-    def sea_shape(self, llbbox=(-180,-90,180,90)):
+    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
         out = []
-        if llbbox == (-180,-90,180,90):
-            for phi in range(0,360):
+        if llbbox == (-180, -90, 180, 90):
+            for phi in range(0, 360):
                 x = self.r + math.cos(math.radians(phi)) * self.r
                 y = self.r + math.sin(math.radians(phi)) * self.r
                 out.append((x, y))
@@ -100,12 +100,11 @@ class Orthographic(Azimuthal):
         lon, lat = self.ll(lon, lat)
         elevation = self.to_elevation(lat)
         azimuth = self.to_azimuth(lon)
-        xo = self.r * math.cos(elevation) * math.sin(azimuth-self.azimuth0)
-        yo = -self.r * (math.cos(self.elevation0) * math.sin(elevation) - math.sin(self.elevation0) * math.cos(elevation) * math.cos(azimuth-self.azimuth0))
+        xo = self.r * math.cos(elevation) * math.sin(azimuth - self.azimuth0)
+        yo = -self.r * (math.cos(self.elevation0) * math.sin(elevation) - math.sin(self.elevation0) * math.cos(elevation) * math.cos(azimuth - self.azimuth0))
         x = self.r + xo
         y = self.r + yo
-        return (x,y)
-
+        return (x, y)
 
 
 class LAEA(Azimuthal):
@@ -115,32 +114,30 @@ class LAEA(Azimuthal):
     implementation taken from
     Snyder, Map projections - A working manual
     """
-    def __init__(self,lon0=0.0,lat0=0.0):
-        import sys
-        self.scale = math.sqrt(2)*0.5
+    def __init__(self, lon0=0.0, lat0=0.0):
+        self.scale = math.sqrt(2) * 0.5
         Azimuthal.__init__(self, lat0, lon0)
 
     def project(self, lon, lat):
-        from math import radians as rad, pow, asin, cos, sin
+        from math import radians as rad, pow, cos, sin
         # lon,lat = self.ll(lon, lat)
         phi = rad(lat)
         lam = rad(lon)
 
         if False and abs(lon - self.lon0) == 180:
-            xo = self.r*2
+            xo = self.r * 2
             yo = 0
         else:
-            k = pow(2 / (1 + sin(self.phi0) * sin(phi) + cos(self.phi0)*cos(phi)*cos(lam - self.lam0)), .5)
-            k *= self.scale#.70738033
+            k = pow(2 / (1 + sin(self.phi0) * sin(phi) + cos(self.phi0) * cos(phi) * cos(lam - self.lam0)), .5)
+            k *= self.scale  # .70738033
 
             xo = self.r * k * cos(phi) * sin(lam - self.lam0)
-            yo = -self.r * k * ( cos(self.phi0)*sin(phi) - sin(self.phi0)*cos(phi)*cos(lam - self.lam0) )
+            yo = -self.r * k * (cos(self.phi0) * sin(phi) - sin(self.phi0) * cos(phi) * cos(lam - self.lam0))
 
         x = self.r + xo
         y = self.r + yo
 
-        return (x,y)
-
+        return (x, y)
 
 
 class Stereographic(Azimuthal):
@@ -150,26 +147,25 @@ class Stereographic(Azimuthal):
     implementation taken from
     Snyder, Map projections - A working manual
     """
-    def __init__(self,lat0=0.0,lon0=0.0):
+    def __init__(self, lat0=0.0, lon0=0.0):
         Azimuthal.__init__(self, lat0, lon0)
 
     def project(self, lon, lat):
-        from math import radians as rad, pow, asin, cos, sin
-        lon,lat = self.ll(lon, lat)
+        from math import radians as rad, cos, sin
+        lon, lat = self.ll(lon, lat)
         phi = rad(lat)
         lam = rad(lon)
 
         k0 = 0.5
-        k = 2*k0 / (1 + sin(self.phi0) * sin(phi) + cos(self.phi0)*cos(phi)*cos(lam - self.lam0))
+        k = 2 * k0 / (1 + sin(self.phi0) * sin(phi) + cos(self.phi0) * cos(phi) * cos(lam - self.lam0))
 
         xo = self.r * k * cos(phi) * sin(lam - self.lam0)
-        yo = -self.r * k * ( cos(self.phi0)*sin(phi) - sin(self.phi0)*cos(phi)*cos(lam - self.lam0) )
+        yo = -self.r * k * (cos(self.phi0) * sin(phi) - sin(self.phi0) * cos(phi) * cos(lam - self.lam0))
 
         x = self.r + xo
         y = self.r + yo
 
-        return (x,y)
-
+        return (x, y)
 
 
 class Satellite(Azimuthal):
@@ -182,7 +178,7 @@ class Satellite(Azimuthal):
     up .. angle the camera is turned away from north (clockwise)
     tilt .. angle the camera is tilted
     """
-    def __init__(self,lat0=0.0,lon0=0.0,dist=1.6,up=0, tilt=0):
+    def __init__(self, lat0=0.0, lon0=0.0, dist=1.6, up=0, tilt=0):
         import sys
         Azimuthal.__init__(self, 0, 0)
 
@@ -194,20 +190,19 @@ class Satellite(Azimuthal):
 
         self.scale = 1
         xmin = sys.maxint
-        xmax = sys.maxint*-1
-        for lat in range(0,180):
-            for lon in range(0,361):
-                x,y = self.project(lon-180,lat-90)
+        xmax = sys.maxint * -1
+        for lat in range(0, 180):
+            for lon in range(0, 361):
+                x, y = self.project(lon - 180, lat - 90)
                 xmin = min(x, xmin)
                 xmax = max(x, xmax)
-        self.scale = (self.r*2)/(xmax-xmin)
+        self.scale = (self.r * 2) / (xmax - xmin)
 
         Azimuthal.__init__(self, lat0, lon0)
 
-
     def project(self, lon, lat):
-        from math import radians as rad, pow, asin, cos, sin
-        lon,lat = self.ll(lon, lat)
+        from math import radians as rad, cos, sin
+        lon, lat = self.ll(lon, lat)
         phi = rad(lat)
         lam = rad(lon)
 
@@ -218,7 +213,7 @@ class Satellite(Azimuthal):
         k *= self.scale
 
         xo = self.r * k * cos(phi) * sin(lam - self.lam0)
-        yo = -self.r * k * ( cos(self.phi0)*sin(phi) - sin(self.phi0)*cos(phi)*cos(lam - self.lam0) )
+        yo = -self.r * k * (cos(self.phi0) * sin(phi) - sin(self.phi0) * cos(phi) * cos(lam - self.lam0))
 
         # rotate
         tilt = self.tilt_
@@ -226,24 +221,24 @@ class Satellite(Azimuthal):
         cos_up = cos(self.up_)
         sin_up = sin(self.up_)
         cos_tilt = cos(tilt)
-        sin_tilt = sin(tilt)
+        # sin_tilt = sin(tilt)
 
         H = self.r * (self.dist - 1)
-        A = ((yo * cos_up + xo * sin_up) * sin(tilt/H)) + cos_tilt
-        xt = (xo * cos_up - yo * sin_up) * cos(tilt/A)
+        A = ((yo * cos_up + xo * sin_up) * sin(tilt / H)) + cos_tilt
+        xt = (xo * cos_up - yo * sin_up) * cos(tilt / A)
         yt = (yo * cos_up + xo * sin_up) / A
 
         x = self.r + xt
         y = self.r + yt
 
-        return (x,y)
+        return (x, y)
 
     def _visible(self, lon, lat):
         elevation = self.to_elevation(lat)
         azimuth = self.to_azimuth(lon)
         # work out if the point is visible
-        cosc = math.sin(elevation)*math.sin(self.elevation0)+math.cos(self.elevation0)*math.cos(elevation)*math.cos(azimuth-self.azimuth0)
-        return cosc >= (1.0/self.dist)
+        cosc = math.sin(elevation) * math.sin(self.elevation0) + math.cos(self.elevation0) * math.cos(elevation) * math.cos(azimuth - self.azimuth0)
+        return cosc >= (1.0 / self.dist)
 
     def attrs(self):
         p = super(Satellite, self).attrs()
@@ -253,11 +248,10 @@ class Satellite(Azimuthal):
         return p
 
     def _truncate(self, x, y):
-        theta = math.atan2(y-self.r,x-self.r)
+        theta = math.atan2(y - self.r, x - self.r)
         x1 = self.r + self.r * math.cos(theta)
         y1 = self.r + self.r * math.sin(theta)
-        return (x1,y1)
-
+        return (x1, y1)
 
 
 class EquidistantAzimuthal(Azimuthal):
@@ -267,11 +261,11 @@ class EquidistantAzimuthal(Azimuthal):
     implementation taken from
     Snyder, Map projections - A working manual
     """
-    def __init__(self,lat0=0.0,lon0=0.0):
+    def __init__(self, lat0=0.0, lon0=0.0):
         Azimuthal.__init__(self, lat0, lon0)
 
     def project(self, lon, lat):
-        from math import radians as rad, pow, asin, cos, sin
+        from math import radians as rad, cos, sin
 
         phi = rad(lat)
         lam = rad(lon)
@@ -282,16 +276,15 @@ class EquidistantAzimuthal(Azimuthal):
         if sin_c == 0:
             k = 1
         else:
-            k = 0.325 * c/sin(c)
+            k = 0.325 * c / sin(c)
 
         xo = self.r * k * cos(phi) * sin(lam - self.lam0)
-        yo = -self.r * k * ( cos(self.phi0)*sin(phi) - sin(self.phi0)*cos(phi)*cos(lam - self.lam0) )
+        yo = -self.r * k * (cos(self.phi0) * sin(phi) - sin(self.phi0) * cos(phi) * cos(lam - self.lam0))
 
         x = self.r + xo
         y = self.r + yo
 
-        return (x,y)
+        return (x, y)
 
     def _visible(self, lon, lat):
         return True
-
