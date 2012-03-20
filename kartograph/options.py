@@ -29,7 +29,7 @@ def parse_proj(opts):
     """
     if 'proj' not in opts: opts['proj'] = {}
     prj = opts['proj']
-    if 'id' not in prj: 
+    if 'id' not in prj:
         if 'bounds' not in opts:
             prj['id'] = 'robinson'
         else:
@@ -40,7 +40,7 @@ def parse_proj(opts):
     for attr in prjClass.attributes():
         if attr not in prj:
             prj[attr] = "auto"
-    
+
 
 def parse_layers(opts):
     if 'layers' not in opts: opts['layers'] = []
@@ -71,16 +71,16 @@ def parse_layers(opts):
                     layer['id'] = 'sea'
                     if s_id > 0: layer['id'] += '_'+str(s_id)
                     s_id += 1
-                
-                    
+
+
         parse_layer_attributes(layer)
         parse_layer_filter(layer)
         parse_layer_join(layer)
-        parse_layer_simplify(layer)    
+        parse_layer_simplify(layer)
         parse_layer_subtract(layer)
         parse_layer_cropping(layer)
 
-            
+
 def parse_layer_attributes(layer):
     if 'attributes' not in layer:
         layer['attributes'] = []
@@ -123,14 +123,14 @@ def parse_layer_filter(layer):
     else:
         raise Error('you must define either "equals", "greater-than" or "less-than" in the filter')
 
-    
+
 def parse_layer_join(layer):
     if 'join' not in layer:
         layer['join'] = False
         return
     if layer['join'] is False:
         return
-        
+
     join = layer['join']
     if 'group-by' not in join:
         raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
@@ -138,8 +138,8 @@ def parse_layer_join(layer):
         join['groups'] = None
     if 'group-as' not in join:
         join['group-as'] = False
-        
-        
+
+
 def parse_layer_simplify(layer):
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
@@ -166,7 +166,7 @@ def parse_layer_cropping(layer):
     if 'crop-to' not in layer:
         layer['crop-to'] = False
         return
-        
+
 
 def parse_layer_graticule(layer):
     if 'latitudes' not in layer:
@@ -175,49 +175,54 @@ def parse_layer_graticule(layer):
         step = layer['latitudes']
         layer['latitudes'] = [0]
         for lat in _xfrange(step, 90, step):
-            layer['latitudes'] += [lat, -lat]    
+            layer['latitudes'] += [lat, -lat]
     if 'longitudes' not in layer:
         layer['longitudes'] = []
     elif isinstance(layer['longitudes'], (int,float)):
         step = layer['longitudes']
         layer['longitudes'] = [0]
         for lon in _xfrange(step, 180, step):
-            layer['longitudes'] += [lon, -lon]    
+            layer['longitudes'] += [lon, -lon]
 
-    
+
 def _xfrange(start, stop, step):
     while (step > 0 and start < stop) or (step < 0 and start > step):
         yield start
         start += step
-        
+
+
 def parse_bounds(opts):
-    if 'bounds' not in opts: 
+    if 'bounds' not in opts:
         opts['bounds'] = {}
         #return
     bounds = opts['bounds']
     if 'mode' not in bounds:
         bounds['mode'] = 'bbox'
+
     if 'data' not in bounds:
-        bounds['data'] = [-180,-90,180,90]
+        bounds['data'] = [-180, -90, 180, 90]
         bounds['mode'] = 'bbox'
+
     mode = bounds['mode']
     data = bounds['data']
+
     if "padding" not in bounds:
         bounds["padding"] = 0
+
     if mode == "bbox":
         try:
             if len(data) == 4:
-                for i in range(0,4):
+                for i in range(0, 4):
                     data[i] = float(data[i])
             else:
                 raise Error('bounds mode bbox requires array with exactly 4 values [lon0,lat0,lon1,lat]')
         except Error as err:
             raise err
         except:
-            raise Error('bounds mode bbox requires array with exactly 4 values [lon0,lat0,lon1,lat]') 
+            raise Error('bounds mode bbox requires array with exactly 4 values [lon0,lat0,lon1,lat]')
     elif mode == "points":
         try:
-            for i in range(0,len(data)):
+            for i in range(0, len(data)):
                 pt = data[i]
                 if len(pt) == 2:
                     pt = map(float, pt)
@@ -227,17 +232,17 @@ def parse_bounds(opts):
             raise err
         except:
             raise Error('bounds mode points requires array with (lon,lat) tuples')
-    elif mode in ("polygons","polygon"):
+    elif mode in ("polygons", "polygon"):
         bounds['mode'] = mode = "polygons"
         if "layer" not in data or not is_str(data["layer"]):
-            raise Error('you must specify a layer for bounds mode '+mode)
+            raise Error('you must specify a layer for bounds mode ' + mode)
         if "attribute" not in data or not is_str(data["attribute"]):
             data["attribute"] = None
         if "values" not in data:
             if data["attribute"] is None:
                 data["values"] = None
             else:
-                raise Error('you must specify a list of values to match in bounds mode '+mode)
+                raise Error('you must specify a list of values to match in bounds mode ' + mode)
         if is_str(data["values"]):
             data["values"] = [data["values"]]
         if "min-area" in data:
@@ -247,7 +252,7 @@ def parse_bounds(opts):
                 raise Error('min_area must be an integer or float')
         else:
             data['min-area'] = 0
-                
+
 
 def parse_export(opts):
     if "export" not in opts:
@@ -260,11 +265,10 @@ def parse_export(opts):
         exp["height"] = "auto"
     elif "width" not in exp:
         exp["width"] = "auto"
-        
+
     if "ratio" not in exp:
-        exp["ratio"] = "auto"        
+        exp["ratio"] = "auto"
     if "round" not in exp:
         exp["round"] = False
     else:
         exp["round"] = int(exp["round"])
-        
