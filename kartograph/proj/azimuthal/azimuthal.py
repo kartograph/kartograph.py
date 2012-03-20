@@ -52,7 +52,7 @@ class Azimuthal(Proj):
 
     def world_bounds(self, bbox, llbbox=(-180, -90, 180, 90)):
         if llbbox == (-180, -90, 180, 90):
-            d = self.r * 2
+            d = self.r * 4
             bbox.update((0, 0))
             bbox.update((d, d))
         else:
@@ -61,7 +61,8 @@ class Azimuthal(Proj):
 
     def sea_shape(self, llbbox=(-180, -90, 180, 90)):
         out = []
-        if llbbox == (-180, -90, 180, 90):
+        if llbbox == (-180, -90, 180, 90) or llbbox == [-180, -90, 180, 90]:
+            print "-> full extend"
             for phi in range(0, 360):
                 x = self.r + math.cos(math.radians(phi)) * self.r
                 y = self.r + math.sin(math.radians(phi)) * self.r
