@@ -15,7 +15,7 @@ git clone https://github.com/kartograph/kartograph.py kartograph
 
 ```bash
 cd kartograph
-sudo python setup.py intstall
+sudo python setup.py install
 ```
 
 ## Test installation
