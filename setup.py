@@ -26,7 +26,8 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["pyshp", "polygon", "pyyaml"],
+    install_requires=["pyshp", "pyyaml"],
+    dependency_links=["https://github.com/downloads/jraedler/Polygon2/Polygon-2.0.4.zip"],
     tests_require=[],
     entry_points={
         'console_scripts': [
