@@ -1,3 +1,11 @@
+0.1.6
+-----
+* fixed command line args
+
+0.1.5
+-----
+* fixed graticule for azimuthal projection
+
 0.1.4
 -----
 * bugfixed azimuthal projections
