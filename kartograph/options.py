@@ -9,8 +9,10 @@ import os.path, proj, errors
 
 Error = errors.KartographOptionParseError
 
+
 def is_str(s):
     return isinstance(s, (str, unicode))
+
 
 def parse_options(opts):
     """
@@ -27,7 +29,8 @@ def parse_proj(opts):
     """
     checks projections
     """
-    if 'proj' not in opts: opts['proj'] = {}
+    if 'proj' not in opts:
+        opts['proj'] = {}
     prj = opts['proj']
     if 'id' not in prj:
         if 'bounds' not in opts:
@@ -43,7 +46,8 @@ def parse_proj(opts):
 
 
 def parse_layers(opts):
-    if 'layers' not in opts: opts['layers'] = []
+    if 'layers' not in opts:
+        opts['layers'] = []
     l_id = 0
     g_id = 0
     s_id = 0
@@ -54,24 +58,26 @@ def parse_layers(opts):
             raise Error('you need to define the source for your layers')
         if 'src' in layer:
             if not os.path.exists(layer['src']):
-                raise Error('layer source not found: '+layer['src'])
+                raise Error('layer source not found: ' + layer['src'])
             if 'id' not in layer:
-                layer['id'] = 'layer_'+str(l_id)
+                layer['id'] = 'layer_' + str(l_id)
                 l_id += 1
         elif 'special' in layer:
             if layer['special'] == 'graticule':
                 if 'id' not in layer:
                     layer['id'] = 'graticule'
-                    if g_id > 0: layer['id'] += '_'+str(g_id)
+                    if g_id > 0:
+                        layer['id'] += '_' + str(g_id)
                     g_id += 1
-                if 'fill' not in layer['styles']: layer['styles']['fill'] = 'None'
+                if 'fill' not in layer['styles']:
+                    layer['styles']['fill'] = 'None'
                 parse_layer_graticule(layer)
             elif layer['special'] == 'sea':
                 if 'id' not in layer:
                     layer['id'] = 'sea'
-                    if s_id > 0: layer['id'] += '_'+str(s_id)
+                    if s_id > 0:
+                        layer['id'] += '_' + str(s_id)
                     s_id += 1
-
 
         parse_layer_attributes(layer)
         parse_layer_filter(layer)
@@ -89,9 +95,9 @@ def parse_layer_attributes(layer):
     for attr in layer['attributes']:
         if is_str(attr):
             if isinstance(layer['attributes'], list):
-                attrs.append({'src':attr, 'tgt': attr })
+                attrs.append({'src': attr, 'tgt': attr})
             elif isinstance(layer['attributes'], dict):
-                attrs.append({'src':attr, 'tgt': layer['attributes'][attr] })
+                attrs.append({'src': attr, 'tgt': layer['attributes'][attr]})
         elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
             attrs.append(attr)
     layer['attributes'] = attrs
@@ -158,7 +164,7 @@ def parse_layer_subtract(layer):
     if 'subtract-from' not in layer:
         layer['subtract-from'] = False
         return
-    if isinstance(layer['subtract-from'], (str,unicode)):
+    if isinstance(layer['subtract-from'], (str, unicode)):
         layer['subtract-from'] = [layer['subtract-from']]
 
 
@@ -171,18 +177,22 @@ def parse_layer_cropping(layer):
 def parse_layer_graticule(layer):
     if 'latitudes' not in layer:
         layer['latitudes'] = []
-    elif isinstance(layer['latitudes'], (int,float)):
+    elif isinstance(layer['latitudes'], (int, float)):
         step = layer['latitudes']
         layer['latitudes'] = [0]
         for lat in _xfrange(step, 90, step):
             layer['latitudes'] += [lat, -lat]
     if 'longitudes' not in layer:
         layer['longitudes'] = []
-    elif isinstance(layer['longitudes'], (int,float)):
+    elif isinstance(layer['longitudes'], (int, float)):
         step = layer['longitudes']
         layer['longitudes'] = [0]
-        for lon in _xfrange(step, 180, step):
-            layer['longitudes'] += [lon, -lon]
+        for lon in _xfrange(step, 181, step):
+            if lon == 180:
+                p = [lon]
+            else:
+                p = [lon, -lon]
+            layer['longitudes'] += p
 
 
 def _xfrange(start, stop, step):

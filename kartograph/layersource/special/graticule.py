@@ -32,6 +32,11 @@ class GraticuleLayer(LayerSource):
             for lon in xfrange(-180, 181, 0.5):
                 if lon < minLon or lon > maxLon:
                     continue
+                lon += proj.lon0
+                if lon < -180:
+                    lon += 360
+                if lon > 180:
+                    lon -= 360
                 if proj._visible(lon, lat):
                     pts.append((lon, lat))
             if len(pts) > 1:
