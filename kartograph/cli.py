@@ -12,7 +12,7 @@ def main():
 
     from errors import KartographError
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print "try: kartograph svg map-config.yaml"
         sys.exit(1)
 
@@ -23,7 +23,7 @@ def main():
         cfg = {}
         output = None
         opt_src = None
-        opts, args = getopt.getopt(sys.argv[2:], 'c:o:', ['config=', 'output='])
+        opts, args = getopt.getopt(sys.argv[3:], 'c:o:', ['config=', 'output='])
         for o, a in opts:
             if o in ('-c', '--config'):
                 opt_src = a
