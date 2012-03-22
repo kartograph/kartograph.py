@@ -23,17 +23,12 @@ def main():
         cfg = {}
         output = None
         opt_src = None
-        opts, args = getopt.getopt(sys.argv[3:], 'c:o:', ['config=', 'output='])
+        opts, args = getopt.getopt(sys.argv[2:], 'c:o:', ['config=', 'output='])
         for o, a in opts:
             if o in ('-c', '--config'):
                 opt_src = a
             elif o in ('-o', '--output'):
                 output = a
-
-        if opt_src is None and len(sys.argv) > 2:
-            opt_src = sys.argv[2]
-        else:
-            raise KartographError('you need to pass a map configuration (json/yaml)')
 
         # check and load map configuration
         if os.path.exists(opt_src):
