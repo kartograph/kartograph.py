@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
+from azimuthal import Azimuthal
 from ortho import Orthographic
 from laea import LAEA
 from stereo import Stereographic
