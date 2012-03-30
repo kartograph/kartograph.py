@@ -8,6 +8,6 @@ class SeaLayer(LayerSource):
     """
 
     def get_features(self, sea_poly):
-        props = { '__color__':'#d0ddf0' }
+        #props = { '__color__':'#d0ddf0' }
         geom = MultiPolygon(sea_poly)
-        return [Feature(geom,props)]
+        return [Feature(geom, {})]

@@ -365,3 +365,88 @@ class Winkel3(Aitoff):
     def __init__(self, lon0=0, flip=0):
         Aitoff.__init__(self, lon0=lon0, flip=flip)
         self.winkel = True
+
+
+class Nicolosi(PseudoCylindrical):
+
+    def __init__(me, lon0=0, flip=0):
+        me.EPS = 1e-10
+        PseudoCylindrical.__init__(me, lon0=lon0, flip=flip)
+        me.r = me.HALFPI * 100
+        sea = []
+        r = me.r
+        for phi in range(0, 361):
+            sea.append((math.cos(rad(phi)) * r, math.sin(rad(phi)) * r))
+        me.sea = sea
+
+    def _clon(me, lon):
+        lon -= me.lon0
+        if lon < -180:
+            lon += 360
+        elif lon > 180:
+            lon -= 360
+        return lon
+
+    def _visible(me, lon, lat):
+        lon = me._clon(lon)
+        return lon > -90 and lon < 90
+
+    def _truncate(me, x, y):
+        theta = math.atan2(y, x)
+        x1 = me.r * math.cos(theta)
+        y1 = me.r * math.sin(theta)
+        return (x1, y1)
+
+    def world_bounds(self, bbox, llbbox=(-180, -90, 180, 90)):
+        if llbbox == (-180, -90, 180, 90):
+            d = self.r * 2
+            bbox.update((-d, -d))
+            bbox.update((d, d))
+        else:
+            bbox = super(PseudoCylindrical, self).world_bounds(bbox, llbbox)
+        return bbox
+
+    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
+        out = []
+        if llbbox == (-180, -90, 180, 90) or llbbox == [-180, -90, 180, 90]:
+            for phi in range(0, 360):
+                x = math.cos(math.radians(phi)) * self.r
+                y = math.sin(math.radians(phi)) * self.r
+                out.append((x, y))
+            out = [out]
+        else:
+            out = super(PseudoCylindrical, self).sea_shape(llbbox)
+        return out
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+
+        if abs(lam) < me.EPS:
+            x = 0
+            y = phi
+        elif abs(phi) < me.EPS:
+            x = lam
+            y = 0
+        elif abs(abs(lam) - me.HALFPI) < me.EPS:
+            x = lam * math.cos(phi)
+            y = me.HALFPI * math.sin(phi)
+        elif abs(abs(phi) - me.HALFPI) < me.EPS:
+            x = 0
+            y = phi
+        else:
+            tb = me.HALFPI / lam - lam / me.HALFPI
+            c = phi / me.HALFPI
+            sp = math.sin(phi)
+            d = (1 - c * c) / (sp - c)
+            r2 = tb / d
+            r2 *= r2
+            m = (tb * sp / d - 0.5 * tb) / (1.0 + r2)
+            n = (sp / r2 + 0.5 * d) / (1.0 + 1.0 / r2)
+            x = math.cos(phi)
+            x = math.sqrt(m * m + x * x / (1.0 + r2))
+            x = me.HALFPI * (m + (x, -x)[lam < 0])
+            y = math.sqrt(n * n - (sp * sp / r2 + d * sp - 1.0) / (1.0 + 1.0 / r2))
+            y = me.HALFPI * (n + (-y, y)[phi < 0])
+        return (x * 100, y * -100)
