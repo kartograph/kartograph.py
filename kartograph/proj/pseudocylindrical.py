@@ -388,7 +388,7 @@ class Nicolosi(PseudoCylindrical):
         return lon
 
     def _visible(me, lon, lat):
-        lon = me._clon(lon)
+        #lon = me._clon(lon)
         return lon > -90 and lon < 90
 
     def _truncate(me, x, y):
@@ -447,6 +447,30 @@ class Nicolosi(PseudoCylindrical):
             x = math.cos(phi)
             x = math.sqrt(m * m + x * x / (1.0 + r2))
             x = me.HALFPI * (m + (x, -x)[lam < 0])
-            y = math.sqrt(n * n - (sp * sp / r2 + d * sp - 1.0) / (1.0 + 1.0 / r2))
-            y = me.HALFPI * (n + (-y, y)[phi < 0])
+            f = n * n - (sp * sp / r2 + d * sp - 1.0) / (1.0 + 1.0 / r2)
+            if f < 0:
+                y = phi
+            else:
+                y = math.sqrt(f)
+                y = me.HALFPI * (n + (-y, y)[phi < 0])
         return (x * 100, y * -100)
+
+    def plot(self, polygon, truncate=True):
+        polygons = self._shift_polygon(polygon)
+        plotted = []
+        for polygon in polygons:
+            points = []
+            ignore = True
+            for (lon, lat) in polygon:
+                vis = self._visible(lon, lat)
+                if vis:
+                    ignore = False
+                x, y = self.project(lon, lat)
+                if not vis and truncate:
+                    points.append(self._truncate(x, y))
+                else:
+                    points.append((x, y))
+            if ignore:
+                continue
+            plotted.append(points)
+        return plotted
