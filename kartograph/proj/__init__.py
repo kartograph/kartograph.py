@@ -45,6 +45,7 @@ projections['goodehomolosine'] = GoodeHomolosine
 projections['hatano'] = Hatano
 projections['aitoff'] = Aitoff
 projections['winkel3'] = Winkel3
+projections['nicolosi'] = Nicolosi
 
 from azimuthal import *
 

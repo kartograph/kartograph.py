@@ -132,7 +132,10 @@ class Kartograph(object):
 
         if mode == "bbox":  # catch special case bbox
             sea = proj.sea_shape(data)
-            return MultiPolygon(sea)
+            spoly = MultiPolygon(sea)
+            sbbox = spoly.bbox()
+            sbbox.inflate(sbbox.width * bnds['padding'])
+            return bbox_to_polygon(sbbox)
 
         bbox = BBox()
 
