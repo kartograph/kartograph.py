@@ -199,21 +199,24 @@ class Kartograph(object):
         src = self.layers[id]
         is_projected = False
 
+        bbox = [-180, -90, 180, 90]
+        if opts['bounds']['mode'] == "bbox":
+            bbox = opts['bounds']['data']
+        if 'crop' in opts['bounds']:
+            bbox = opts['bounds']['crop']
+
         if 'src' in layer:  # regular geodata layer
             if layer['filter'] is False:
                 filter = None
             else:
                 filter = lambda rec: filter_record(layer['filter'], rec)
-            features = src.get_features(filter)
+            features = src.get_features(filter=filter, bbox=bbox)
 
         elif 'special' in layer:  # special layers need special treatment
             if layer['special'] == "graticule":
-                bbox = [-180, -90, 180, 90]
-                if opts['bounds']['mode'] == "bbox":
-                    bbox = opts['bounds']['data']
                 lats = layer['latitudes']
                 lons = layer['longitudes']
-                features = src.get_features(lats, lons, proj, bbox)
+                features = src.get_features(lats, lons, proj, bbox=bbox)
 
             elif layer['special'] == "sea":
                 features = src.get_features(proj.sea_shape())
@@ -235,7 +238,7 @@ class Kartograph(object):
         w = view.width
         h = view.height + 2
 
-        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-width:0.7px; stroke-linejoin: round; stroke:#000; fill:#f6f3f0;')
+        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-linejoin: round; stroke:#000; fill:#f6f3f0;')
         defs = svg.node('defs', svg.root)
         style = svg.node('style', defs, type='text/css')
         css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '

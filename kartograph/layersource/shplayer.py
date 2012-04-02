@@ -1,6 +1,7 @@
 
 from layersource import LayerSource
-from kartograph import errors
+from os.path import basename
+
 
 class ShapefileLayer(LayerSource):
     """
@@ -38,18 +39,21 @@ class ShapefileLayer(LayerSource):
         """
         returns a shape of this shapefile. if requested for the first time, the shape is loaded from shapefile (slow)
         """
-        if i in self.shapes: # check cache
+        if i in self.shapes:  # check cache
             shp = self.shapes[i]
-        else: # load shape from shapefile
+        else:  # load shape from shapefile
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
-    def get_features(self, filter=None):
+    def get_features(self, attr=None, filter=None, bbox=None):
         """
         returns a list of features matching to the attr -> value pair
         """
-        from kartograph.geometry import Feature
+        from kartograph.geometry import Feature, BBox
         res = []
+        if bbox is not None:
+            bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
+            ignored = 0
         for i in range(0, len(self.recs)):
             drec = {}
             for j in range(len(self.attributes)):
@@ -66,10 +70,19 @@ class ShapefileLayer(LayerSource):
 
                 if shp.shapeType == 5:  # multi-polygon
                     geom = points2polygon(shp)
+                elif shp.shapeType == 3:  # line
+                    geom = points2line(shp)
+                else:
+                    print 'unknown shape type', shp.shapeType
+
+                if bbox is not None and not bbox.intersects(geom.bbox()):
+                    ignored += 1
+                    continue  # ignore if not within bounds
 
                 feature = Feature(geom, props)
                 res.append(feature)
-
+        if bbox is not None:
+            print "[%s] ignored %d shapes (not in bounds)" % (basename(self.shpSrc), ignored)
         return res
 
 
@@ -81,8 +94,8 @@ def points2polygon(shp):
     parts = shp.parts[:]
     parts.append(len(shp.points))
     contours = []
-    for j in range(len(parts)-1):
-        pts = shp.points[parts[j]:parts[j+1]]
+    for j in range(len(parts) - 1):
+        pts = shp.points[parts[j]:parts[j + 1]]
         pts_ = []
         lpt = None
         for pt in pts:
@@ -94,3 +107,15 @@ def points2polygon(shp):
         contours.append(pts_)
     poly = MultiPolygon(contours)
     return poly
+
+
+def points2line(shp):
+    """ converts a shapefile line to geometry.Line """
+    from kartograph.geometry import PolyLine
+    parts = shp.parts[:]
+    parts.append(len(shp.points))
+    lines = []
+    for j in range(len(parts) - 1):
+        pts = shp.points[parts[j]:parts[j + 1]]
+        lines.append(pts)
+    return PolyLine(lines)

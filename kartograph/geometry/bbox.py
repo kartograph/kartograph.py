@@ -1,6 +1,7 @@
 
 from point import Point
 
+
 class BBox(object):
     """
     2D bounding box

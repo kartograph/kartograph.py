@@ -80,7 +80,7 @@ class Feature:
                 import unicodedata
                 if isinstance(val, str):
                     val = unicode(val, errors='ignore')
-                    val = unicodedata.normalize('NFKD', val).encode('ascii','ignore')
+                    val = unicodedata.normalize('NFKD', val).encode('ascii', 'ignore')
                 xt.append(KML.Data(
                     KML.value(val),
                     name=cfg['tgt']

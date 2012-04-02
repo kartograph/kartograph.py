@@ -182,6 +182,7 @@ def parse_layer_graticule(layer):
         layer['latitudes'] = [0]
         for lat in _xfrange(step, 90, step):
             layer['latitudes'] += [lat, -lat]
+
     if 'longitudes' not in layer:
         layer['longitudes'] = []
     elif isinstance(layer['longitudes'], (int, float)):

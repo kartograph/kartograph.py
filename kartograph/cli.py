@@ -29,6 +29,8 @@ def main():
                 opt_src = a
             elif o in ('-o', '--output'):
                 output = a
+        if opt_src is None:
+            opt_src = sys.argv[2]
 
         # check and load map configuration
         if os.path.exists(opt_src):

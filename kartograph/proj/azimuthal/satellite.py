@@ -100,7 +100,7 @@ class Satellite(Azimuthal):
         return p
 
     def _truncate(self, x, y):
-        theta = math.atan2(y - self.r, x - self.r)
-        x1 = self.r + self.r * math.cos(theta)
-        y1 = self.r + self.r * math.sin(theta)
-        return (x1, y1)
+        #theta = math.atan2(y - self.r, x - self.r)
+        #x1 = self.r + self.r * math.cos(theta)
+        #y1 = self.r + self.r * math.sin(theta)
+        return (x, y)
