@@ -1,7 +1,8 @@
-0.1.9
+0.2.0
 -----
 * cleaned command-line interface, using argparse now
-* removed -c option
+* removed command-line option -c (pass config filename as positional argument instead)
+* removed command-line command generate (use svg instead)
 
 0.1.8
 -----
