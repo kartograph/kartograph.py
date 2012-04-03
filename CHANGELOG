@@ -1,3 +1,13 @@
+0.1.9
+-----
+* cleaned command-line interface, using argparse now
+* removed -c option
+
+0.1.8
+-----
+* adding crop latlon bbox for limiting the number of processed geometries
+* bugfixes
+
 0.1.7
 -----
 * removed default styles from sea layer

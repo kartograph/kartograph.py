@@ -36,10 +36,11 @@ class Document(object):
         from subprocess import call
         call(["firefox", "tmp.svg"])
 
-    def save(self, filename):
-        f = open(filename, 'w')
-        f.write(self.doc.toxml())
-        f.close()
+    def save(self, outfile):
+        if isinstance(outfile, str):
+            outfile = open(outfile, 'w')
+        outfile.write(self.doc.toxml())
+        outfile.close()
 
     def tostring(self):
         return self.doc.toxml()

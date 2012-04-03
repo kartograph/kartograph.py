@@ -20,10 +20,10 @@ class Kartograph(object):
         generates svg map
         """
         parse_options(opts)
+        self._verbose = 'verbose' in opts and opts['verbose']
         self.prepare_layers(opts)
 
         proj = self.get_projection(opts)
-        print proj
         bounds_poly = self.get_bounds(opts, proj)
         bbox = bounds_poly.bbox()
 
@@ -105,7 +105,7 @@ class Kartograph(object):
             lon0 = data[0] + 0.5 * (data[2] - data[0])
             lat0 = data[1] + 0.5 * (data[3] - data[1])
 
-        elif mode == 'points':
+        elif mode[:5] == 'point':
             lon0 = 0
             lat0 = 0
             m = 1 / len(data)
@@ -113,10 +113,14 @@ class Kartograph(object):
                 lon0 += m * lon
                 lat0 += m * lat
 
-        elif mode == 'polygons':
+        elif mode[:4] == 'poly':
             features = self.get_bounds_polygons(opts)
-            if isinstance(features[0].geom, SolidGeometry):
-                (lon0, lat0) = features[0].geom.centroid()
+            if len(features) > 0:
+                if isinstance(features[0].geom, SolidGeometry):
+                    (lon0, lat0) = features[0].geom.centroid()
+            else:
+                lon0 = 0
+                lat0 = 0
         return (lon0, lat0)
 
     def get_bounds(self, opts, proj):
@@ -130,6 +134,9 @@ class Kartograph(object):
         mode = bnds['mode'][:]
         data = bnds['data']
 
+        if self._verbose:
+            print 'bounds mode', mode
+
         if mode == "bbox":  # catch special case bbox
             sea = proj.sea_shape(data)
             spoly = MultiPolygon(sea)
@@ -139,17 +146,19 @@ class Kartograph(object):
 
         bbox = BBox()
 
-        if mode == "points":
+        if mode[:5] == "point":
             for lon, lat in data:
                 pt = proj.project(lon, lat)
                 bbox.update(pt)
 
-        if mode == "polygons":
+        if mode[:4] == "poly":
             features = self.get_bounds_polygons(opts)
-            for feature in features:
-                fbbox = feature.geom.project(proj).bbox(data["min-area"])
-                bbox.join(fbbox)
-
+            if len(features) > 0:
+                for feature in features:
+                    fbbox = feature.geom.project(proj).bbox(data["min-area"])
+                    bbox.join(fbbox)
+            else:
+                raise KartographError('no features found for calculating the map bounds')
         bbox.inflate(bbox.width * bnds['padding'])
         return bbox_to_polygon(bbox)
 
@@ -170,7 +179,7 @@ class Kartograph(object):
             filter = None
         else:
             filter = lambda rec: rec[attr] in data['values']
-        features = layer.get_features(filter)
+        features = layer.get_features(filter=filter)
         return features
 
     def get_view(self, opts, bbox):
@@ -270,7 +279,7 @@ class Kartograph(object):
                 for feature in layerFeatures[id]:
                     feature.geom.unify(point_store, layerOpts[id]['unify-precision'])
 
-        #print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
+        # print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
 
         to_simplify = []
         for id in layers:
@@ -280,7 +289,8 @@ class Kartograph(object):
         to_simplify.sort(key=lambda id: layerOpts[id]['simplify'])
 
         for id in to_simplify:
-            print 'simplifying', id
+            if self._verbose:
+                print 'simplifying', id
             for feature in layerFeatures[id]:
                 for pts in feature.geom.points():
                     simplify_distance(pts, layerOpts[id]['simplify'])
@@ -389,7 +399,8 @@ class Kartograph(object):
         store features in svg
         """
         for id in layers:
-            print id
+            if self._verbose:
+                print id
             if len(layerFeatures[id]) == 0:
                 continue  # ignore empty layers
             g = svg.node('g', svg.root, id=id)
@@ -444,10 +455,10 @@ class Kartograph(object):
         self.store_layers_kml(layers, layerOpts, layerFeatures, kml, opts)
 
         if outfile is None:
-            outfile = 'tmp.kml'
+            outfile = open('tmp.kml', 'w')
 
         from lxml import etree
-        open(outfile, 'w').write(etree.tostring(kml, pretty_print=True))
+        outfile.write(etree.tostring(kml, pretty_print=True))
 
     def init_kml_canvas(self):
         from pykml.factory import KML_ElementMaker as KML
@@ -465,7 +476,8 @@ class Kartograph(object):
         from pykml.factory import KML_ElementMaker as KML
 
         for id in layers:
-            print id
+            if self._verbose:
+                print id
             if len(layerFeatures[id]) == 0:
                 continue  # ignore empty layers
             g = KML.Folder(

@@ -7,7 +7,7 @@ Open Source Python library for generating semantic SVG maps.
 
 setup(
     name='kartograph.py',
-    version='0.1.8',
+    version='0.1.9',
     description="Open Source Python library for generating semantic SVG maps",
     long_description=long_desc,
     classifiers=[

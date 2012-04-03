@@ -81,7 +81,7 @@ class ShapefileLayer(LayerSource):
 
                 feature = Feature(geom, props)
                 res.append(feature)
-        if bbox is not None:
+        if bbox is not None and ignored > 0:
             print "[%s] ignored %d shapes (not in bounds)" % (basename(self.shpSrc), ignored)
         return res
 
