@@ -148,7 +148,7 @@ class Line(Geometry):
                 path_str = "M"
             else:
                 path_str += "L"
-            path_str += fmt % (pt.x, pt.y)
+            path_str += fmt % (pt[0], pt[1])
 
         path = svg.node('path', d=path_str)
         return path
