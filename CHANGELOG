@@ -1,3 +1,15 @@
+0.2.2
+-----
+* temporarily added pyshp code since it contains a bugfix 
+* accepting shape type 15 (PolygonZ)
+* catching kartograph error messages from cli
+* fixed polygon bounds mode if no attribute filter is used
+
+0.2.1
+-----
+* repaired conic projection
+* handling non-simplified line geometries
+
 0.2.0
 -----
 * cleaned command-line interface, using argparse now
