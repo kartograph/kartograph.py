@@ -61,13 +61,21 @@ def parse_config(f):
 def svg(args):
     cfg = parse_config(args.config)
     K = Kartograph()
-    K.generate(cfg, args.output)
+    try:
+        K.generate(cfg, args.output)
+    except KartographError, e:
+        print e
+        exit(-1)
 
 
 def kml(args):
     cfg = parse_config(args.config)
     K = Kartograph()
-    K.generate_kml(cfg, args.config)
+    try:
+        K.generate_kml(cfg, args.config)
+    except KartographError, e:
+        print e
+        exit(-1)
 
 
 def cartogram(args):
