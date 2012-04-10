@@ -26,20 +26,11 @@ class Cylindrical(Proj):
     def __init__(self, lon0=0.0, flip=0):
         self.flip = flip
         self.lon0 = lon0
-        sea = []
-        for lat in range(-90, 90):
-            sea.append((-180, lat))
-        for lon in range(-180, 180):
-            sea.append((lon, 90))
-        for lat in range(-90, 90):
-            sea.append((180, lat * -1))
-        for lon in range(-180, 180):
-            sea.append((lon * -1, -90))
-        self.sea = sea
+        self.sea = self.sea_coords()
 
         if lon0 != 0.0:
-            from Polygon import Polygon as Poly
-            self.inside_p = Poly(sea)
+            from Polygon import MultiPolygon as Poly
+            self.inside_p = Poly(self.sea)
 
     def plot(self, polygon, truncate=True):
         if self.lon0 != 0.0:
