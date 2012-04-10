@@ -1,6 +1,7 @@
 
 from layersource import LayerSource
 from os.path import basename
+from kartograph.errors import *
 
 
 class ShapefileLayer(LayerSource):
@@ -45,7 +46,7 @@ class ShapefileLayer(LayerSource):
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
-    def get_features(self, attr=None, filter=None, bbox=None):
+    def get_features(self, attr=None, filter=None, bbox=None, verbose=False):
         """
         returns a list of features matching to the attr -> value pair
         """
@@ -68,12 +69,12 @@ class ShapefileLayer(LayerSource):
 
                 shp = self.get_shape(i)
 
-                if shp.shapeType == 5:  # multi-polygon
+                if shp.shapeType in (5, 15):  # multi-polygon
                     geom = points2polygon(shp)
                 elif shp.shapeType == 3:  # line
                     geom = points2line(shp)
                 else:
-                    print 'unknown shape type', shp.shapeType
+                    raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
 
                 if bbox is not None and not bbox.intersects(geom.bbox()):
                     ignored += 1
@@ -81,7 +82,7 @@ class ShapefileLayer(LayerSource):
 
                 feature = Feature(geom, props)
                 res.append(feature)
-        if bbox is not None and ignored > 0:
+        if bbox is not None and ignored > 0 and verbose:
             print "[%s] ignored %d shapes (not in bounds)" % (basename(self.shpSrc), ignored)
         return res
 
@@ -96,6 +97,9 @@ def points2polygon(shp):
     contours = []
     for j in range(len(parts) - 1):
         pts = shp.points[parts[j]:parts[j + 1]]
+        if shp.shapeType == 15:
+            for k in range(len(pts)):
+                pts[k] = pts[k][:2]
         pts_ = []
         lpt = None
         for pt in pts:
