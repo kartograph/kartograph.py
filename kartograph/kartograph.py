@@ -175,7 +175,7 @@ class Kartograph(object):
             raise KartographError('layer not found "%s"' % id)
         layer = self.layers[id]
         attr = data['attribute']
-        if attr is None:
+        if not attr:
             filter = None
         else:
             filter = lambda rec: rec[attr] in data['values']
@@ -219,7 +219,7 @@ class Kartograph(object):
                 filter = None
             else:
                 filter = lambda rec: filter_record(layer['filter'], rec)
-            features = src.get_features(filter=filter, bbox=bbox)
+            features = src.get_features(filter=filter, bbox=bbox, verbose=self._verbose)
 
         elif 'special' in layer:  # special layers need special treatment
             if layer['special'] == "graticule":
