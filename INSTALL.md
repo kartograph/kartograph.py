@@ -1,12 +1,62 @@
 # Step by Step Installation Instructions
+
 Tested on Mac OS 10.6.8
 
-## Install Python 2.7 
 
-http://python.org/download/
+## Automatic Install
 
-## Install needed libraries
-### shapefile (http://code.google.com/p/pyshp/)
+1. Download kartograph.py
+
+```bash
+git clone https://github.com/kartograph/kartograph.py kartograph
+```
+
+2. Use setup.py to install Kartograph + required libraries
+
+```bash
+cd kartograph
+sudo python setup.py install
+```
+
+## Test installation
+
+Kartograph at least needs a shapefile to create a svg map from. You can download public domain shapefiles from [naturalearthdata.com](http://www.naturalearthdata.com/downloads/). If you only want to test the installation, grab and unzip the following shapefile of the United States.
+
+```bash
+wget http://data.kartograph.org/united-states.zip
+unzip united-states.zip -d shp
+```
+
+Now create a very simple map configuration and store it to ``map.yaml``
+
+```yaml
+layers:
+-  src: shp/united-states.shp
+bounds:
+   mode: bbox
+   data: [-120,25,-73,50]
+```
+
+Now you can generate the SVG map using
+
+```bash
+kartograph svg map.yaml -o states.svg
+```
+
+If you want to preview generated maps automatically, save the following script to ```/usr/local/bin/firefox` (make sure to point it to the location where you installed Firefox on your system).
+
+```bash
+#!/bin/sh
+open -a /Applications/Firefox.app $1
+```
+
+
+
+## Manual Install
+
+You need to install required libraries
+
+###shapefile (http://code.google.com/p/pyshp/)
 
 One of the following should work
 
@@ -28,10 +78,6 @@ and copy the folder "Polygon" into
 
 /Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/
 
-### SvgFig
-Follow instructions here:
-
-http://code.google.com/p/svgfig/wiki/HowToInstall
 
 ## Download kartograph.py
 
@@ -44,46 +90,4 @@ Output should look like this:
 	remote: Compressing objects: 100% (265/265), done.
 	remote: Total 422 (delta 210), reused 353 (delta 141)
 	Receiving objects: 100% (422/422), 38.82 MiB | 458 KiB/s, 	Resolving deltas: 100% (210/210), done.
-
-
-## Download shapefiles
-Kartograf needs some shapefiles from naturalearthdata.com. While you could download them manually, you can also get them packed into one archive:
-
-http://kartograph.org/data.7z
-
-Download them into your kartograph.py/ directory and unzip them via
-
-	cd kartograph.py
-	7z x data.7z
-
-You can safely replace any files.
-
-You may need to install the **7z** archive utility
-
-	brew install p7zip
-
-## Test installation
-
-	cd kartograph.py
-	python kartograph world -o world.svg
-
-If you want to open generated maps automatically, save the following script to `/usr/local/bin/firefox` (make sure to point it to the location where you installed Firefox on your system).
-
-	#!/bin/sh
-	open -a /Applications/Firefox.app $1
-
-Using that, you're able to open things in Firefox via command line, eg.
-
-	firefox world.svg
-
-If you then run svgmap without the -o parameter, the map would automatically open in firefox.
-
-	python kartograph world
-
-If you don't want to type that "python " prefix you can run this. Note that you still have to run svgmap from the svgmap.py/ directory.
-
-	chmod +x kartograph
-	export PATH=$PATH:.
-	kartograph world
-
 

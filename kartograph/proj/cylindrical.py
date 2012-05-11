@@ -24,22 +24,13 @@ from math import radians as rad
 class Cylindrical(Proj):
 
     def __init__(self, lon0=0.0, flip=0):
-        self.flip=flip
+        self.flip = flip
         self.lon0 = lon0
-        sea = []
-        for lat in range(-90, 90):
-            sea.append((-180, lat))
-        for lon in range(-180, 180):
-            sea.append((lon, 90))
-        for lat in range(-90, 90):
-            sea.append((180, lat * -1))
-        for lon in range(-180, 180):
-            sea.append((lon * -1, -90))
-        self.sea = sea
+        self.sea = self.sea_coords()
 
         if lon0 != 0.0:
-            from Polygon import Polygon as Poly
-            self.inside_p = Poly(sea)
+            from Polygon import MultiPolygon as Poly
+            self.inside_p = Poly(self.sea)
 
     def plot(self, polygon, truncate=True):
         if self.lon0 != 0.0:
@@ -91,11 +82,11 @@ class Cylindrical(Proj):
     def _truncate(self, x, y):
         return (x, y)
 
-    def toXML(self):
-        p = super(Cylindrical, self).toXML()
-        p['lon0'] = str(self.lon0)
-        p['flip'] = str(self.flip)
-        return p
+    def attrs(self):
+        a = super(Cylindrical, self).attrs()
+        a['lon0'] = self.lon0
+        a['flip'] = self.flip
+        return a
 
     def __str__(self):
         return 'Proj(' + self.name + ', lon0=%s)' % self.lon0
@@ -144,9 +135,9 @@ class CEA(Cylindrical):
         y = math.sin(phi) / math.cos(self.phi1) * 1000
         return (x, y)
 
-    def toXML(self):
-        p = super(CEA, self).toXML()
-        p['lat1'] = str(self.lat1)
+    def attrs(self):
+        p = super(CEA, self).attrs()
+        p['lat1'] = self.lat1
         return p
 
     @staticmethod

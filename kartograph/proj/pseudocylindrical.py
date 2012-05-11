@@ -149,8 +149,8 @@ class Sinusoidal(PseudoCylindrical):
         lon, lat = self.ll(lon, lat)
         lam = rad(lon)
         phi = rad(lat * -1)
-        x = lam * math.cos(phi)
-        y = phi
+        x = 1032 * lam * math.cos(phi)
+        y = 1032 * phi
         return (x, y)
 
 
@@ -200,6 +200,23 @@ class Mollweide(PseudoCylindrical):
         return (x, y * -1)
 
 
+class GoodeHomolosine(PseudoCylindrical):
+
+    def __init__(self, lon0=0, flip=0):
+        self.lat1 = 41.737
+        PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.p1 = Mollweide()
+        self.p0 = Sinusoidal()
+
+    def project(self, lon, lat):
+        lon, lat = self.ll(lon, lat)
+        #lon = me.clon(lon)
+        if abs(lat) > self.lat1:
+            return self.p1.project(lon, lat)
+        else:
+            return self.p0.project(lon, lat)
+
+
 class WagnerIV(Mollweide):
     def __init__(self, lon0=0, lat0=0, flip=0):
         # p=math.pi/3
@@ -238,9 +255,9 @@ class Loximuthal(PseudoCylindrical):
         y = 1000 * (phi - self.phi0)
         return (x, y * -1)
 
-    def toXML(self):
-        p = super(Loximuthal, self).toXML()
-        p['lat0'] = str(self.lat0)
+    def attrs(self):
+        p = super(Loximuthal, self).attrs()
+        p['lat0'] = self.lat0
         return p
 
     @staticmethod
@@ -277,3 +294,183 @@ class CantersModifiedSinusoidalI(PseudoCylindrical):
         x = 1000 * lon * math.cos(lat) / (me.C1 + me.C3x3 * y2 + me.C5x5 * y4)
         y = 1000 * lat * (me.C1 + me.C3 * y2 + me.C5 * y4)
         return (x, y * -1)
+
+
+class Hatano(PseudoCylindrical):
+
+    def __init__(me, lon0=0, flip=0):
+        PseudoCylindrical.__init__(me, lon0=lon0, flip=flip)
+        me.NITER = 20
+        me.EPS = 1e-7
+        me.ONETOL = 1.000001
+        me.CN = 2.67595
+        me.CS = 2.43763
+        me.RCN = 0.37369906014686373063
+        me.RCS = 0.41023453108141924738
+        me.FYCN = 1.75859
+        me.FYCS = 1.93052
+        me.RYCN = 0.56863737426006061674
+        me.RYCS = 0.51799515156538134803
+        me.FXC = 0.85
+        me.RXC = 1.17647058823529411764
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+        c = math.sin(phi) * (me.CN, me.CS)[phi < 0.0]
+        for i in range(me.NITER, 0, -1):
+            th1 = (phi + math.sin(phi) - c) / (1.0 + math.cos(phi))
+            phi -= th1
+            if abs(th1) < me.EPS:
+                break
+        phi *= 0.5
+        x = 1000 * me.FXC * lam * math.cos(phi)
+        y = 1000 * math.sin(phi) * (me.FYCN, me.FYCS)[phi < 0.0]
+        return (x, y * -1)
+
+
+class Aitoff(PseudoCylindrical):
+    """
+    Aitoff projection
+
+    implementation taken from
+    Snyder, Map projections - A working manual
+    """
+    def __init__(self, lon0=0, flip=0):
+        PseudoCylindrical.__init__(self, lon0=lon0, flip=flip)
+        self.winkel = False
+        self.COSPHI1 = 0.636619772367581343
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+        c = 0.5 * lam
+        d = math.acos(math.cos(phi) * math.cos(c))
+        if d != 0:
+            y = 1.0 / math.sin(d)
+            x = 2.0 * d * math.cos(phi) * math.sin(c) * y
+            y *= d * math.sin(phi)
+        else:
+            x = y = 0
+        if me.winkel:
+            x = (x + lam * me.COSPHI1) * 0.5
+            y = (y + phi) * 0.5
+        return (x * 1000, y * -1000)
+
+
+class Winkel3(Aitoff):
+
+    def __init__(self, lon0=0, flip=0):
+        Aitoff.__init__(self, lon0=lon0, flip=flip)
+        self.winkel = True
+
+
+class Nicolosi(PseudoCylindrical):
+
+    def __init__(me, lon0=0, flip=0):
+        me.EPS = 1e-10
+        PseudoCylindrical.__init__(me, lon0=lon0, flip=flip)
+        me.r = me.HALFPI * 100
+        sea = []
+        r = me.r
+        for phi in range(0, 361):
+            sea.append((math.cos(rad(phi)) * r, math.sin(rad(phi)) * r))
+        me.sea = sea
+
+    def _clon(me, lon):
+        lon -= me.lon0
+        if lon < -180:
+            lon += 360
+        elif lon > 180:
+            lon -= 360
+        return lon
+
+    def _visible(me, lon, lat):
+        #lon = me._clon(lon)
+        return lon > -90 and lon < 90
+
+    def _truncate(me, x, y):
+        theta = math.atan2(y, x)
+        x1 = me.r * math.cos(theta)
+        y1 = me.r * math.sin(theta)
+        return (x1, y1)
+
+    def world_bounds(self, bbox, llbbox=(-180, -90, 180, 90)):
+        if llbbox == (-180, -90, 180, 90):
+            d = self.r * 2
+            bbox.update((-d, -d))
+            bbox.update((d, d))
+        else:
+            bbox = super(PseudoCylindrical, self).world_bounds(bbox, llbbox)
+        return bbox
+
+    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
+        out = []
+        if llbbox == (-180, -90, 180, 90) or llbbox == [-180, -90, 180, 90]:
+            for phi in range(0, 360):
+                x = math.cos(math.radians(phi)) * self.r
+                y = math.sin(math.radians(phi)) * self.r
+                out.append((x, y))
+            out = [out]
+        else:
+            out = super(PseudoCylindrical, self).sea_shape(llbbox)
+        return out
+
+    def project(me, lon, lat):
+        [lon, lat] = me.ll(lon, lat)
+        lam = rad(lon)
+        phi = rad(lat)
+
+        if abs(lam) < me.EPS:
+            x = 0
+            y = phi
+        elif abs(phi) < me.EPS:
+            x = lam
+            y = 0
+        elif abs(abs(lam) - me.HALFPI) < me.EPS:
+            x = lam * math.cos(phi)
+            y = me.HALFPI * math.sin(phi)
+        elif abs(abs(phi) - me.HALFPI) < me.EPS:
+            x = 0
+            y = phi
+        else:
+            tb = me.HALFPI / lam - lam / me.HALFPI
+            c = phi / me.HALFPI
+            sp = math.sin(phi)
+            d = (1 - c * c) / (sp - c)
+            r2 = tb / d
+            r2 *= r2
+            m = (tb * sp / d - 0.5 * tb) / (1.0 + r2)
+            n = (sp / r2 + 0.5 * d) / (1.0 + 1.0 / r2)
+            x = math.cos(phi)
+            x = math.sqrt(m * m + x * x / (1.0 + r2))
+            x = me.HALFPI * (m + (x, -x)[lam < 0])
+            f = n * n - (sp * sp / r2 + d * sp - 1.0) / (1.0 + 1.0 / r2)
+            if f < 0:
+                y = phi
+            else:
+                y = math.sqrt(f)
+                y = me.HALFPI * (n + (-y, y)[phi < 0])
+        return (x * 100, y * -100)
+
+    def plot(self, polygon, truncate=True):
+        polygons = self._shift_polygon(polygon)
+        plotted = []
+        for polygon in polygons:
+            points = []
+            ignore = True
+            for (lon, lat) in polygon:
+                vis = self._visible(lon, lat)
+                if vis:
+                    ignore = False
+                x, y = self.project(lon, lat)
+                if not vis and truncate:
+                    points.append(self._truncate(x, y))
+                else:
+                    points.append((x, y))
+            if ignore:
+                continue
+            plotted.append(points)
+        return plotted

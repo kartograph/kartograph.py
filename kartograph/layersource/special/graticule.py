@@ -1,6 +1,7 @@
 
 from kartograph.geometry import Line, Feature
 from kartograph.layersource.layersource import LayerSource
+from kartograph.proj.azimuthal import Azimuthal
 
 
 class GraticuleLayer(LayerSource):
@@ -32,11 +33,18 @@ class GraticuleLayer(LayerSource):
             for lon in xfrange(-180, 181, 0.5):
                 if lon < minLon or lon > maxLon:
                     continue
+                #if isinstance(proj, Azimuthal):
+                #    lon += proj.lon0
+                #    if lon < -180:
+                #        lon += 360
+                #    if lon > 180:
+                #        lon -= 360
                 if proj._visible(lon, lat):
                     pts.append((lon, lat))
             if len(pts) > 1:
                 line = Feature(Line(pts), props)
                 line_features.append(line)
+        print line_features
 
         # longitudes
         for lon in longitudes:
@@ -47,7 +55,7 @@ class GraticuleLayer(LayerSource):
             #lat_range = xfrange(step[0], 181-step[0],1)
             #if lon % 90 == 0:
             #    lat_range = xfrange(0, 181,1)
-            for lat in xfrange(0, 181, 1):
+            for lat in xfrange(0, 181, 0.5):
                 lat_ = lat - 90
                 if lat_ < minLat or lat_ > maxLat:
                     continue

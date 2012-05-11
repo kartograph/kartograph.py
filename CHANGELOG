@@ -1,0 +1,58 @@
+0.2.2
+-----
+* temporarily added pyshp code since it contains a bugfix 
+* accepting shape type 15 (PolygonZ)
+* catching kartograph error messages from cli
+* fixed polygon bounds mode if no attribute filter is used
+
+0.2.1
+-----
+* repaired conic projection
+* handling non-simplified line geometries
+
+0.2.0
+-----
+* cleaned command-line interface, using argparse now
+* removed command-line option -c (pass config filename as positional argument instead)
+* removed command-line command generate (use svg instead)
+
+0.1.8
+-----
+* adding crop latlon bbox for limiting the number of processed geometries
+* bugfixes
+
+0.1.7
+-----
+* removed default styles from sea layer
+* added Nicolosi Globular Projection
+
+0.1.6
+-----
+* fixed command line args
+
+0.1.5
+-----
+* fixed graticule for azimuthal projection
+
+0.1.4
+-----
+* bugfixed azimuthal projections
+* refactored azimuthal projections in separate files
+
+0.1.3
+-----
+* added Aitoff, Winkel Tripel and Hatano projection
+
+0.1.2
+----
+* added non-interrupted goode-homolosine projection 
+
+0.1.1
+-----
+* removed dependency to svgfig
+* added setup.py
+
+0.1.0
+-----
+inital version
+

@@ -28,6 +28,8 @@ class Proj(object):
 
     minLat = -90
     maxLat = 90
+    minLon = -180
+    maxLon = 180
 
     def plot(self, polygon, truncate=True):
         points = []
@@ -63,12 +65,11 @@ class Proj(object):
             bbox.update((x, y))
         return bbox
 
-    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
+    def sea_coords(self, llbbox=(-180, -90, 180, 90)):
         """
         returns non-projected multi-polygon map bounds
         """
         sea = []
-        out = []
 
         minLon = llbbox[0]
         maxLon = llbbox[2]
@@ -97,19 +98,27 @@ class Proj(object):
         for lon in xfrange(maxLon, minLon, lon_step):
             sea.append((lon, minLat))
 
-        for s in sea:
-            lon, lat = s
-            out.append(self.project(lon, lat))
+        return [sea]
 
-        return [out]
+    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
+        """
+        returns projected multi-polygon map bounds
+        """
+        sea = self.sea_coords(llbbox)
+        out = []
+        for poly in sea:
+            p = []
+            for s in poly:
+                lon, lat = s
+                p.append(self.project(lon, lat))
+            out.append(p)
+        return out
 
     def __str__(self):
         return 'Proj(' + self.name + ')'
 
-    def toXML(self):
-        from svgfig import SVG
-        p = SVG('proj', id=self.name)
-        return p
+    def attrs(self):
+        return dict(id=self.name)
 
     @staticmethod
     def attributes():
@@ -129,4 +138,3 @@ class Proj(object):
                     args[prop[0]] = float(val)
             return ProjClass(**args)
         raise Exception("could not restore projection from xml")
-
