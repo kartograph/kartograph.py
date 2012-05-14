@@ -52,13 +52,17 @@ class MultiPolygonFeature(Feature):
         converts the MultiPolygon geometry into a set of linear rings
         and 'unifies' the points in the rings in order to compute topology
         """
+        print self.props['FIPS_1'],
         rings = []
         num_holes = []
         for polygon in self.geometry.geoms:
             num_holes.append(len(polygon.interiors))  # store number of holes per polygon
-            rings.append(polygon.exterior.coords)
+            ext = polygon.exterior.coords
+            rings.append(ext)
+            print len(ext),
             for hole in polygon.interiors:
                 rings.append(hole.coords)
+        print '\t %d polygons\t %d rings\t %d holes' % (len(num_holes), len(rings), sum(num_holes))
         self._topology_rings = unify_rings(rings, point_store, precision=precision, feature=self)
         self._topology_num_holes = num_holes
 
@@ -67,32 +71,50 @@ class MultiPolygonFeature(Feature):
         temporarily stores the geometry in a custom representation in order
         to preserve topology during simplification
         """
+        # print '\n\n', self.props['NAME_1'],
         lines = []
         lines_per_ring = []
         for ring in self._topology_rings:
             l = 0  # store number of lines per ring
             s = 0
             i = s + 1
+            K = len(ring)
+            # print '\n\tnew ring (' + str(K) + ')',
             # find first break-point
-            while ring[i].features == ring[i - 1].features and i < len(ring):
+            while i < K and ring[i].features == ring[i - 1].features:
                 i += 1
+            if i == len(ring):  # no break-point found at all
+                line = ring  # so the entire ring is treated as one line
+                # print len(line),
+                lines.append(line)  # store it
+                lines_per_ring.append(1)  # and remember that this ring has only 1 line
+                continue  # proceed to next ring
             s = i  # store index of first break-point
-            a = s + 1  # start round-trip at next point
+            a = None
+            # loop-entry conditions:
+            # - 'a' holds the index of the break-point, equals to s
+            # - 's' is the index of the first break-point in the entire ring
             while a != s:
-                line = [a]  # add start point to line
+                if a is None:
+                    a = s  # if no break-point is set, start with the first one
+                line = [a]  # add starting brak-point to line
                 i = a + 1  # proceed to next point
-                while i != s and ring[i].features == ring[i - 1].features:  # look for end of next line
+                if i == K:
+                    i = 0  # wrap around to first point if needed
+                while i != s and ring[i].features == ring[((i - 1) + len(ring)) % len(ring)].features:  # look for end of this line
                     line.append(i)  # add point to line
-                    i += 1
-                    if i == len(ring):
-                        i = 0  # flip to beginning
+                    i += 1  # proceed to next point
+                    if i == K:
+                        i = 0  # eventually wrap around
                 line.append(i)  # add end point to line
-                print line
-                for ll in range(len(line)):
-                    line[ll] = ring[ll]  # replace point indices with actual points
-                lines.append(line)  # store line
                 l += 1  # increase line-per-ring counter
-                a = i
+                a = i  # set end point as next starting point
+                #if a == s:  # if next starting point is the first break point..
+                #    line.append(s)  # append
+                # print len(line),
+                for ll in range(len(line)):
+                    line[ll] = ring[line[ll]]  # replace point indices with actual points
+                lines.append(line)  # store line
             lines_per_ring.append(l)
 
         self._topology_lines_per_ring = lines_per_ring
@@ -103,24 +125,34 @@ class MultiPolygonFeature(Feature):
         restores geometry from linear rings
         """
         from shapely.geometry import Polygon, MultiPolygon
+        print self.props['FIPS_1'],
         # at first we restore the rings
         rings = []
+        p = 0
         for l in self._topology_lines_per_ring:
             ring = []
-            for k in range(l):
-                line = lines[k]
-                ring += line[:-1]
+            for k in range(p, p + l):
+                line = []
+                for pt in lines[k]:
+                    if not pt.deleted:
+                        line.append((pt[0], pt[1]))
+                ring += line
+            p += l
             rings.append(ring)
         # then we restore polygons from rings
         ring_iter = iter(rings)
         polygons = []
+        holes_total = 0
         for num_hole in self._topology_num_holes:
             ext = ring_iter.next()
+            print len(ext),
             holes = []
             while num_hole > 0:
                 holes.append(ring_iter.next())
+                holes_total += 1
                 num_hole -= 1
             polygons.append(Polygon(ext, holes))
+        print '\t %d polygons \t %d rings \t %d holes' % (len(polygons), len(rings), holes_total)
         self.geometry = MultiPolygon(polygons)
 
 

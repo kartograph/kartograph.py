@@ -336,7 +336,7 @@ class Kartograph(object):
         # step 2: simplify lines
         # step 3: restore polygons form line segments
         # step 1: unify
-        from simplify import create_point_store, simplify_distance
+        from simplify import create_point_store, simplify_lines
 
         point_store = create_point_store()  # create a new empty point store
 
@@ -353,12 +353,19 @@ class Kartograph(object):
                     feature.break_into_lines()
 
         # simplify lines
+        print ''
         for id in layers:
+            lines_ = []
+            simplified = []
             if layerOpts[id]['simplify'] is not False:
                 for feature in layerFeatures[id]:
-                    lines = feature.get_line_segments()
-                    # lines = simplify(lines)
+                    lines = feature.break_into_lines()
+                    lines_ += lines
+                    lines = simplify_lines(lines, 'distance', layerOpts[id]['simplify'])
+                    simplified += lines
                     feature.restore_geometry(lines)
+
+            _plot_lines(simplified)
 
     def crop_layers_to_view(self, layers, layerFeatures, view_poly):
         """
@@ -550,3 +557,34 @@ class Kartograph(object):
             for feat in layerFeatures[id]:
                 g.append(feat.to_kml(opts['export']['round'], layerOpts[id]['attributes']))
             kml.Document.append(g)
+
+
+def _plot_lines(lines):
+    from matplotlib import pyplot
+
+    def plot_line(ax, line):
+        from shapely.geometry import LineString
+        filtered = []
+        for pt in line:
+            if not pt.deleted:
+                filtered.append(pt)
+        if len(filtered) < 2:
+            return
+        ob = LineString(line)
+        x, y = ob.xy
+        ax.plot(x, y, '--', color='#999999', linewidth=1, solid_capstyle='round', zorder=1)
+
+        ob = LineString(filtered)
+        x, y = ob.xy
+        ax.plot(x, y, '-', color='#dd4444', linewidth=1, solid_capstyle='round', zorder=1)
+        
+        ax.plot(x[0], y[0], 'o', color='#cc0000', zorder=3)
+        ax.plot(x[-1], y[-1], 'o', color='#cc0000', zorder=3)
+
+    fig = pyplot.figure(1)
+    ax = fig.add_subplot(111)
+    for line in lines:
+        plot_line(ax, line)
+    pyplot.axis([960, 1040.5, 1050, 945])
+    pyplot.grid(True)
+    pyplot.show()

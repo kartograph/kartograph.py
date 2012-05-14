@@ -10,7 +10,7 @@ class Feature:
     """
     def __init__(self, geometry, properties):
         self.geometry = geometry
-        self.properties = self.props = properties
+        self.properties = properties
 
     def __repr__(self):
         return 'Feature(' + self.geometry.__class__.__name__ + ')'
@@ -123,3 +123,7 @@ class Feature:
     @property
     def geom(self):
         return self.geometry
+
+    @property
+    def props(self):
+        return self.properties
