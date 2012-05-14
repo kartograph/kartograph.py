@@ -2,7 +2,12 @@
 
 def simplify_distance(points, dist):
     """
-    Simplifies a list of points
+    simplifies a line segment using a very simple algorithm that checks the distance
+    to the last non-deleted point. the algorithm operates on line segments.
+
+    in order to preserve topology of the original polygons the algorithm
+    - never removes the first or the last point of a line segment
+    - flags all points as simplified after processing (so it won't be processed twice)
     """
     dist_sq = dist * dist
     n = len(points)
