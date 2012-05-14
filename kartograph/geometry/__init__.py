@@ -3,9 +3,9 @@
 geometry package
 """
 
-__all__ = ['Feature', 'Geometry', 'SolidGeometry', 'MultiPolygon', 'BBox', 'Point', 'View', 'Line', 'PolyLine']
+__all__ = ['Feature', 'Geometry', 'SolidGeometry', 'MultiPolygon', 'BBox', 'Point', 'View', 'Line', 'PolyLine', 'create_feature']
 
-from feature import Feature
+from feature import *
 from geometry import Geometry, SolidGeometry
 from polygon import MultiPolygon
 from point import Point

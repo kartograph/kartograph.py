@@ -2,6 +2,7 @@
 from options import parse_options
 from layersource import handle_layer_source
 from geometry import SolidGeometry, BBox, MultiPolygon, View
+from shapely.geometry.base import BaseGeometry
 from proj import projections
 from filter import filter_record
 from errors import *
@@ -45,10 +46,17 @@ class Kartograph(object):
             layerOpts[id] = layer
             layers.append(id)
             features = self.get_features(layer, proj, view, opts, view_poly)
+            print features
             layerFeatures[id] = features
 
-        self.join_layers(layers, layerOpts, layerFeatures)
         self.simplify_layers(layers, layerFeatures, layerOpts)
+
+        for id in layers:
+            self._debug_show_features(layerFeatures[id])
+
+        exit()
+
+        self.join_layers(layers, layerOpts, layerFeatures)
         self.crop_layers_to_view(layers, layerFeatures, view_poly)
         self.crop_layers(layers, layerOpts, layerFeatures)
         self.substract_layers(layers, layerOpts, layerFeatures)
@@ -61,6 +69,56 @@ class Kartograph(object):
                 return svg.tostring()
         else:
             svg.save(outfile)
+
+    def _debug_simplify_and_show(self, features):
+        """ for debugging purposes we're going to output the features """
+        from descartes import PolygonPatch
+        from matplotlib import pyplot
+        from shapely.geometry import MultiPolygon
+        BLUE = '#6699cc'
+        #GRAY = '#999999'
+        fig = pyplot.figure(1)
+        ax = fig.add_subplot(111)
+        polygons = []
+        for feat in features:
+            if feat.geom.type == 'Polygon':
+                polygons.append(feat.geom)
+            elif feat.geom.type == 'MultiPolygon':
+                for poly in feat.geom.geoms:
+                    polygons.append(poly)
+
+        mpoly = MultiPolygon(polygons)
+        mpoly = mpoly.simplify(0.2, preserve_topology=True)
+
+        for polygon in mpoly.geoms:
+            patch1 = PolygonPatch(polygon, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
+            ax.add_patch(patch1)
+
+        pyplot.axis([5.5, 15.5, 47, 55.5])
+        pyplot.grid(True)
+        pyplot.show()
+
+    def _debug_show_features(self, features):
+        """ for debugging purposes we're going to output the features """
+        from descartes import PolygonPatch
+        from matplotlib import pyplot
+        BLUE = '#6699cc'
+        #GRAY = '#999999'
+        fig = pyplot.figure(1)
+        for feat in features:
+            ax = fig.add_subplot(111)
+            if feat.geom.type == 'Polygon':
+                patch1 = PolygonPatch(feat.geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
+                ax.add_patch(patch1)
+            elif feat.geom.type == 'MultiPolygon':
+                for geom in feat.geom.geoms:
+                    patch1 = PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
+                    ax.add_patch(patch1)
+        pyplot.axis([960, 1040.5, 1050, 945])
+        pyplot.grid(True)
+        pyplot.show()
+
+
 
     def prepare_layers(self, opts):
         """
@@ -101,6 +159,8 @@ class Kartograph(object):
         mode = opts['bounds']['mode']
         data = opts['bounds']['data']
 
+        lon0 = 0
+
         if mode == 'bbox':
             lon0 = data[0] + 0.5 * (data[2] - data[0])
             lat0 = data[1] + 0.5 * (data[3] - data[1])
@@ -116,11 +176,13 @@ class Kartograph(object):
         elif mode[:4] == 'poly':
             features = self.get_bounds_polygons(opts)
             if len(features) > 0:
-                if isinstance(features[0].geom, SolidGeometry):
-                    (lon0, lat0) = features[0].geom.centroid()
+                if isinstance(features[0].geom, BaseGeometry):
+                    (lon0, lat0) = features[0].geom.representative_point().coords[0]
             else:
                 lon0 = 0
                 lat0 = 0
+        else:
+            print "unrecognized bound mode", mode
         return (lon0, lat0)
 
     def get_bounds(self, opts, proj):
@@ -155,7 +217,7 @@ class Kartograph(object):
             features = self.get_bounds_polygons(opts)
             if len(features) > 0:
                 for feature in features:
-                    fbbox = feature.geom.project(proj).bbox(data["min-area"])
+                    fbbox = feature.project(proj).bbox(data["min-area"])
                     bbox.join(fbbox)
             else:
                 raise KartographError('no features found for calculating the map bounds')
@@ -234,7 +296,7 @@ class Kartograph(object):
         for feature in features:
             if not is_projected:
                 feature.project(proj)
-            feature.project_view(view)
+            #feature.project_view(view)
 
         return features
 
@@ -270,31 +332,33 @@ class Kartograph(object):
         """
         performs polygon simplification
         """
+        # step 1: convert polygons into line segments
+        # step 2: simplify lines
+        # step 3: restore polygons form line segments
         # step 1: unify
         from simplify import create_point_store, simplify_distance
 
-        point_store = create_point_store()
+        point_store = create_point_store()  # create a new empty point store
+
+        # compute topology for all layers
         for id in layers:
             if layerOpts[id]['simplify'] is not False:
                 for feature in layerFeatures[id]:
-                    feature.geom.unify(point_store, layerOpts[id]['unify-precision'])
+                    feature.compute_topology(point_store, layerOpts[id]['unify-precision'])
 
-        # print 'unified points:', point_store['removed'], (100*point_store['removed']/(point_store['removed']+point_store['kept'])),'%'
-
-        to_simplify = []
+        # break features into lines
         for id in layers:
             if layerOpts[id]['simplify'] is not False:
-                to_simplify.append(id)
+                for feature in layerFeatures[id]:
+                    feature.break_into_lines()
 
-        to_simplify.sort(key=lambda id: layerOpts[id]['simplify'])
-
-        for id in to_simplify:
-            if self._verbose:
-                print 'simplifying', id
-            for feature in layerFeatures[id]:
-                for pts in feature.geom.points():
-                    simplify_distance(pts, layerOpts[id]['simplify'])
-                feature.geom.update()
+        # simplify lines
+        for id in layers:
+            if layerOpts[id]['simplify'] is not False:
+                for feature in layerFeatures[id]:
+                    lines = feature.get_line_segments()
+                    # lines = simplify(lines)
+                    feature.restore_geometry(lines)
 
     def crop_layers_to_view(self, layers, layerFeatures, view_poly):
         """

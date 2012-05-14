@@ -50,7 +50,7 @@ class ShapefileLayer(LayerSource):
         """
         returns a list of features matching to the attr -> value pair
         """
-        from kartograph.geometry import Feature, BBox
+        from kartograph.geometry import create_feature, BBox
         res = []
         if bbox is not None:
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
@@ -69,47 +69,75 @@ class ShapefileLayer(LayerSource):
 
                 shp = self.get_shape(i)
 
-                if shp.shapeType in (5, 15):  # multi-polygon
-                    geom = points2polygon(shp)
-                elif shp.shapeType == 3:  # line
-                    geom = points2line(shp)
-                else:
-                    raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
+                geom = shape2geometry(shp)
 
-                if bbox is not None and not bbox.intersects(geom.bbox()):
-                    ignored += 1
-                    continue  # ignore if not within bounds
+                #if bbox is not None and not bbox.intersects(geom.bbox()):
+                #    ignored += 1
+                #    continue  # ignore if not within bounds
 
-                feature = Feature(geom, props)
+                feature = create_feature(geom, props)
                 res.append(feature)
         if bbox is not None and ignored > 0 and verbose:
             print "[%s] ignored %d shapes (not in bounds)" % (basename(self.shpSrc), ignored)
         return res
 
 
-def points2polygon(shp):
+def shape2geometry(shp):
+    if shp.shapeType in (5, 15):  # multi-polygon
+        geom = shape2polygon(shp)
+    elif shp.shapeType == 3:  # line
+        geom = points2line(shp)
+    else:
+        raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
+    return geom
+
+
+def shape2polygon(shp):
     """
     converts a shapefile polygon to geometry.MultiPolygon
     """
-    from kartograph.geometry import MultiPolygon
+    # from kartograph.geometry import MultiPolygon
+    from shapely.geometry import Polygon, MultiPolygon
+    from kartograph.geometry.utils import is_clockwise
     parts = shp.parts[:]
     parts.append(len(shp.points))
-    contours = []
+    exteriors = []
+    holes = []
     for j in range(len(parts) - 1):
         pts = shp.points[parts[j]:parts[j + 1]]
         if shp.shapeType == 15:
+            # remove z-coordinate from PolygonZ contours (not supported)
             for k in range(len(pts)):
                 pts[k] = pts[k][:2]
-        pts_ = []
-        lpt = None
-        for pt in pts:
-            if lpt is None:
-                pts_.append(pt)
-            elif pt != lpt:
-                pts_.append(pt)
-            lpt = pt
-        contours.append(pts_)
-    poly = MultiPolygon(contours)
+        cw = is_clockwise(pts)
+        if cw:
+            exteriors.append(pts)
+        else:
+            holes.append(pts)
+    if len(exteriors) == 1:
+        poly = MultiPolygon([Polygon(exteriors[0], holes)])
+    elif len(exteriors) > 1:
+        # use multipolygon, but we need to assign the holes to the right
+        # exteriors
+        from kartograph.geometry import BBox
+        used_holes = set()
+        polygons = []
+        for ext in exteriors:
+            bbox = BBox()
+            my_holes = []
+            for pt in ext:
+                bbox.update(pt)
+            for h in range(len(holes)):
+                if h not in used_holes:
+                    hole = holes[h]
+                    if bbox.check_point(hole[0]):
+                        # this is a very weak test but it should be sufficient
+                        used_holes.add(h)
+                        my_holes.append(hole)
+            polygons.append(Polygon(ext, my_holes))
+        poly = MultiPolygon(polygons)
+    else:
+        raise KartographError('shapefile import failed - no outer polygon found')
     return poly
 
 

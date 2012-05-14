@@ -9,7 +9,7 @@ import json
 from errors import KartographError
 
 
-parser = argparse.ArgumentParser(prog='kartograph', description='Generating SVG maps from shapefiles')
+parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles')
 #parser.add_argument('command', type=str, choices=['svg', 'kml', 'generate'], help='specifies what kartograph is supposed to do')
 
 subparsers = parser.add_subparsers(help='sub-command help')
