@@ -361,7 +361,7 @@ class Kartograph(object):
                 for feature in layerFeatures[id]:
                     lines = feature.break_into_lines()
                     lines_ += lines
-                    lines = simplify_lines(lines, 'distance', layerOpts[id]['simplify'])
+                    lines = simplify_lines(lines, 'douglas-peucker', layerOpts[id]['simplify'])
                     simplified += lines
                     feature.restore_geometry(lines)
 
@@ -577,7 +577,6 @@ def _plot_lines(lines):
         ob = LineString(filtered)
         x, y = ob.xy
         ax.plot(x, y, '-', color='#dd4444', linewidth=1, solid_capstyle='round', zorder=1)
-        
         ax.plot(x[0], y[0], 'o', color='#cc0000', zorder=3)
         ax.plot(x[-1], y[-1], 'o', color='#cc0000', zorder=3)
 
