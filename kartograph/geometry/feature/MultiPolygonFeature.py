@@ -106,7 +106,8 @@ class MultiPolygonFeature(Feature):
                     i += 1  # proceed to next point
                     if i == K:
                         i = 0  # eventually wrap around
-                line.append(i)  # add end point to line
+                if i != s:
+                    line.append(i)  # add end point to line
                 l += 1  # increase line-per-ring counter
                 a = i  # set end point as next starting point
                 #if a == s:  # if next starting point is the first break point..
