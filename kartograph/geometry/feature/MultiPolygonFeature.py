@@ -157,7 +157,10 @@ class MultiPolygonFeature(Feature):
             if len(ext) > 3:
                 polygons.append(Polygon(ext, holes))
         print '\t %d polygons \t %d rings \t %d holes' % (len(polygons), len(rings), holes_total)
-        self.geometry = MultiPolygon(polygons)
+        if len(polygons) > 0:
+            self.geometry = MultiPolygon(polygons)
+        else:
+            self.geometry = None
 
 
 def _project_polygon(polygon, proj):
