@@ -36,27 +36,32 @@ def simplify_visvalingam_whyatt(points, tolerance):
         # Reduce any segments that makes a triangle whose area is below
         # the minimum threshold, starting with the smallest and working up.
         # Mark segments to be preserved until the next iteration.
+
         for (area, i) in areas:
+
             if area > min_area:
                 # there won't be any more points to remove.
                 break
-            if pts[i - 1] in preserved or pts[i + 1] in preserved:
+
+            if i - 1 in preserved or i + 1 in preserved:
                 # the current segment is too close to a previously-preserved one.
+                #print "-pre", preserved
                 continue
 
+            points[pts[i]].deleted = True
             popped.append(i)
 
-            preserved.add(pts[i - 1])
-            preserved.add(pts[i + 1])
+            # make sure that the adjacent points
+            preserved.add(i - 1)
+            preserved.add(i + 1)
 
         if len(popped) == 0:
             # no points removed, so break out of loop
             break
 
+        popped = sorted(popped, reverse=True)
         for i in popped:
-            # remove popped indices from pts list
-            points[pts[i]].deleted = True
-        for i in popped:
+            # remove point from index list
             pts = pts[:i] + pts[i + 1:]
 
     for pt in points:
