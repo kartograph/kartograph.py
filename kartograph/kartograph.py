@@ -361,7 +361,7 @@ class Kartograph(object):
                 for feature in layerFeatures[id]:
                     lines = feature.break_into_lines()
                     lines_ += lines
-                    lines = simplify_lines(lines, 'douglas-peucker', layerOpts[id]['simplify'])
+                    lines = simplify_lines(lines, 'visvalingam-whyatt', layerOpts[id]['simplify'])
                     simplified += lines
                     feature.restore_geometry(lines)
 
