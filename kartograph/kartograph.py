@@ -106,6 +106,8 @@ class Kartograph(object):
         #GRAY = '#999999'
         fig = pyplot.figure(1)
         for feat in features:
+            if feat.geom is None:
+                continue
             ax = fig.add_subplot(111)
             if feat.geom.type == 'Polygon':
                 patch1 = PolygonPatch(feat.geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
