@@ -149,10 +149,13 @@ class MultiPolygonFeature(Feature):
             print len(ext),
             holes = []
             while num_hole > 0:
-                holes.append(ring_iter.next())
+                hole = ring_iter.next()
+                if len(hole) > 3:
+                    holes.append(hole)
                 holes_total += 1
                 num_hole -= 1
-            polygons.append(Polygon(ext, holes))
+            if len(ext) > 3:
+                polygons.append(Polygon(ext, holes))
         print '\t %d polygons \t %d rings \t %d holes' % (len(polygons), len(rings), holes_total)
         self.geometry = MultiPolygon(polygons)
 
