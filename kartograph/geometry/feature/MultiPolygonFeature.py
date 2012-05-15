@@ -52,17 +52,14 @@ class MultiPolygonFeature(Feature):
         converts the MultiPolygon geometry into a set of linear rings
         and 'unifies' the points in the rings in order to compute topology
         """
-        print self.props['FIPS_1'],
         rings = []
         num_holes = []
         for polygon in self.geometry.geoms:
             num_holes.append(len(polygon.interiors))  # store number of holes per polygon
             ext = polygon.exterior.coords
             rings.append(ext)
-            print len(ext),
             for hole in polygon.interiors:
                 rings.append(hole.coords)
-        print '\t %d polygons\t %d rings\t %d holes' % (len(num_holes), len(rings), sum(num_holes))
         self._topology_rings = unify_rings(rings, point_store, precision=precision, feature=self)
         self._topology_num_holes = num_holes
 
@@ -106,12 +103,12 @@ class MultiPolygonFeature(Feature):
                     i += 1  # proceed to next point
                     if i == K:
                         i = 0  # eventually wrap around
-                if i != s:
-                    line.append(i)  # add end point to line
+                #if i != s:
+                #    line.append(i)  # add end point to line
                 l += 1  # increase line-per-ring counter
                 a = i  # set end point as next starting point
                 #if a == s:  # if next starting point is the first break point..
-                #    line.append(s)  # append
+                # line.append(s)  # append
                 # print len(line),
                 for ll in range(len(line)):
                     line[ll] = ring[line[ll]]  # replace point indices with actual points

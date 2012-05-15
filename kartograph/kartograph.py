@@ -49,10 +49,10 @@ class Kartograph(object):
             print features
             layerFeatures[id] = features
 
-        self.simplify_layers(layers, layerFeatures, layerOpts)
+        ax = self.simplify_layers(layers, layerFeatures, layerOpts)
 
         for id in layers:
-            self._debug_show_features(layerFeatures[id])
+            self._debug_show_features(layerFeatures[id], ax)
 
         exit()
 
@@ -70,57 +70,26 @@ class Kartograph(object):
         else:
             svg.save(outfile)
 
-    def _debug_simplify_and_show(self, features):
-        """ for debugging purposes we're going to output the features """
-        from descartes import PolygonPatch
-        from matplotlib import pyplot
-        from shapely.geometry import MultiPolygon
-        BLUE = '#6699cc'
-        #GRAY = '#999999'
-        fig = pyplot.figure(1)
-        ax = fig.add_subplot(111)
-        polygons = []
-        for feat in features:
-            if feat.geom.type == 'Polygon':
-                polygons.append(feat.geom)
-            elif feat.geom.type == 'MultiPolygon':
-                for poly in feat.geom.geoms:
-                    polygons.append(poly)
-
-        mpoly = MultiPolygon(polygons)
-        mpoly = mpoly.simplify(0.2, preserve_topology=True)
-
-        for polygon in mpoly.geoms:
-            patch1 = PolygonPatch(polygon, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
-            ax.add_patch(patch1)
-
-        pyplot.axis([5.5, 15.5, 47, 55.5])
-        pyplot.grid(True)
-        pyplot.show()
-
-    def _debug_show_features(self, features):
+    def _debug_show_features(self, features, ax):
         """ for debugging purposes we're going to output the features """
         from descartes import PolygonPatch
         from matplotlib import pyplot
         BLUE = '#6699cc'
         #GRAY = '#999999'
-        fig = pyplot.figure(1)
+        #fig = pyplot.figure(1)
         for feat in features:
             if feat.geom is None:
                 continue
-            ax = fig.add_subplot(111)
             if feat.geom.type == 'Polygon':
-                patch1 = PolygonPatch(feat.geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
+                patch1 = PolygonPatch(feat.geom, fc=BLUE, ec=BLUE, alpha=0.25, zorder=2)
                 ax.add_patch(patch1)
             elif feat.geom.type == 'MultiPolygon':
                 for geom in feat.geom.geoms:
-                    patch1 = PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2)
+                    patch1 = PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.25, zorder=2)
                     ax.add_patch(patch1)
-        pyplot.axis([960, 1040.5, 1050, 945])
-        pyplot.grid(True)
+        #pyplot.axis([960, 1040.5, 1050, 945])
+        #pyplot.grid(True)
         pyplot.show()
-
-
 
     def prepare_layers(self, opts):
         """
@@ -363,7 +332,8 @@ class Kartograph(object):
                     simplified += lines
                     feature.restore_geometry(lines)
 
-            _plot_lines(simplified)
+            ax = _plot_lines(simplified)
+        return ax
 
     def crop_layers_to_view(self, layers, layerFeatures, view_poly):
         """
@@ -584,4 +554,5 @@ def _plot_lines(lines):
         plot_line(ax, line)
     pyplot.axis([960, 1040.5, 1050, 945])
     pyplot.grid(True)
-    pyplot.show()
+    return ax
+    #pyplot.show()
