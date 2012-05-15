@@ -332,10 +332,6 @@ class Kartograph(object):
         """
         performs polygon simplification
         """
-        # step 1: convert polygons into line segments
-        # step 2: simplify lines
-        # step 3: restore polygons form line segments
-        # step 1: unify
         from simplify import create_point_store, simplify_lines
 
         point_store = create_point_store()  # create a new empty point store
@@ -361,7 +357,7 @@ class Kartograph(object):
                 for feature in layerFeatures[id]:
                     lines = feature.break_into_lines()
                     lines_ += lines
-                    lines = simplify_lines(lines, 'visvalingam-whyatt', layerOpts[id]['simplify'])
+                    lines = simplify_lines(lines, layerOpts[id]['simplify']['method'], layerOpts[id]['simplify']['tolerance'])
                     simplified += lines
                     feature.restore_geometry(lines)
 

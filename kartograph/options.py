@@ -150,12 +150,15 @@ def parse_layer_simplify(layer):
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
     if 'simplify' not in layer:
-        layer['simplify'] = 2.0
+        layer['simplify'] = False
         return
     if layer['simplify'] is False:
         return
+    if isinstance(layer['simplify'], (int, float, str, unicode)):
+        # default to visvalingam-whyatt
+        layer['simplify'] = {"method": "visvalingam-whyatt", "tolerance": float(layer['simplify'])}
     try:
-        layer['simplify'] = float(layer['simplify'])
+        layer['simplify']['tolerance'] = float(layer['simplify']['tolerance'])
     except ValueError:
         raise Error('could not convert simplification amount to float')
 
