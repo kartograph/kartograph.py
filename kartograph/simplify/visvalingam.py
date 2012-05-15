@@ -5,9 +5,9 @@ def simplify_visvalingam_whyatt(points, tolerance):
     implementation borrowed from @migurski:
     https://github.com/migurski/Bloch/blob/master/Bloch/__init__.py#L133
     """
-    if points[0].simplified:
-        return
     if len(points) < 3:
+        return
+    if points[1].simplified:
         return
 
     min_area = tolerance ** 2
