@@ -17,7 +17,7 @@ class MultiPolygonFeature(Feature):
         else:
             fmt = '%.' + str(round) + 'f'
             fmt = fmt + ',' + fmt
-        for polygon in self.geometry.geoms:
+        for polygon in self._geoms:
             for ring in [polygon.exterior] + polygon.interiors:
                 cont_str = ""
                 kept = []
@@ -41,7 +41,7 @@ class MultiPolygonFeature(Feature):
     def project_geometry(self, proj):
         """ project the geometry """
         from shapely.geometry import MultiPolygon
-        polygons = self.geometry.geoms
+        polygons = self._geoms
         projected = []
         for polygon in polygons:
             projected += _project_polygon(polygon, proj)
@@ -54,7 +54,7 @@ class MultiPolygonFeature(Feature):
         """
         rings = []
         num_holes = []
-        for polygon in self.geometry.geoms:
+        for polygon in self._geoms:
             num_holes.append(len(polygon.interiors))  # store number of holes per polygon
             ext = polygon.exterior.coords
             rings.append(ext)
@@ -158,6 +158,11 @@ class MultiPolygonFeature(Feature):
             self.geometry = MultiPolygon(polygons)
         else:
             self.geometry = None
+
+    @property
+    def _geoms(self):
+        """ returns a list of geoms """
+        return hasattr(self.geometry, 'geoms') and self.geometry.geoms or [self.geometry]
 
 
 def _project_polygon(polygon, proj):
