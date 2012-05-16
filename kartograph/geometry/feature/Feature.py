@@ -27,8 +27,8 @@ class Feature:
     def project_view(self, view):
         self.geometry = self.geometry.project_view(view)
 
-    def crop_to(self, view_bounds):
-        self.geometry = self.geometry.crop_to(view_bounds)
+    def crop_to(self, geometry):
+        self.geometry = self.geometry.intersection(geometry)
 
     def substract_geom(self, geom):
         self.geometry = self.geometry.substract_geom(geom)
@@ -118,7 +118,7 @@ class Feature:
         return pm
 
     def is_empty(self):
-        return self.geom.is_empty()
+        return self.geom is not None
 
     @property
     def geom(self):

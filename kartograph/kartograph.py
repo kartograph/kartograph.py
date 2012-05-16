@@ -1,8 +1,9 @@
 
 from options import parse_options
 from layersource import handle_layer_source
-from geometry import SolidGeometry, BBox, MultiPolygon, View
+from geometry import BBox, View, MultiPolygon
 from shapely.geometry.base import BaseGeometry
+from shapely.geometry import Polygon
 from proj import projections
 from filter import filter_record
 from errors import *
@@ -31,7 +32,7 @@ class Kartograph(object):
         view = self.get_view(opts, bbox)
         w = view.width
         h = view.height
-        view_poly = MultiPolygon([[(0, 0), (0, h), (w, h), (w, 0)]])
+        view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
         # view_poly = bounds_poly.project_view(view)
 
         svg = self.init_svg_canvas(opts, proj, view, bbox)
@@ -48,19 +49,15 @@ class Kartograph(object):
             features = self.get_features(layer, proj, view, opts, view_poly)
             layerFeatures[id] = features
 
-        _debug_show_features(layerFeatures[id], 'original geometry')
-
+        _debug_show_features(layerFeatures[id], 'original')
         self.join_layers(layers, layerOpts, layerFeatures)
-
         _debug_show_features(layerFeatures[id], 'joined')
-
         self.simplify_layers(layers, layerFeatures, layerOpts)
-
         _debug_show_features(layerFeatures[id], 'simplified')
-
+        self.crop_layers_to_view(layers, layerFeatures, view_poly)
+        _debug_show_features(layerFeatures[id], 'cropped to view')
         exit()
 
-        self.crop_layers_to_view(layers, layerFeatures, view_poly)
         self.crop_layers(layers, layerOpts, layerFeatures)
         self.substract_layers(layers, layerOpts, layerFeatures)
         self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
