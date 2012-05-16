@@ -46,17 +46,20 @@ class Kartograph(object):
             layerOpts[id] = layer
             layers.append(id)
             features = self.get_features(layer, proj, view, opts, view_poly)
-            print features
             layerFeatures[id] = features
 
-        ax = self.simplify_layers(layers, layerFeatures, layerOpts)
+        _debug_show_features(layerFeatures[id], 'original geometry')
 
-        for id in layers:
-            self._debug_show_features(layerFeatures[id], ax)
+        self.join_layers(layers, layerOpts, layerFeatures)
+
+        _debug_show_features(layerFeatures[id], 'joined')
+
+        self.simplify_layers(layers, layerFeatures, layerOpts)
+
+        _debug_show_features(layerFeatures[id], 'simplified')
 
         exit()
 
-        self.join_layers(layers, layerOpts, layerFeatures)
         self.crop_layers_to_view(layers, layerFeatures, view_poly)
         self.crop_layers(layers, layerOpts, layerFeatures)
         self.substract_layers(layers, layerOpts, layerFeatures)
@@ -69,27 +72,6 @@ class Kartograph(object):
                 return svg.tostring()
         else:
             svg.save(outfile)
-
-    def _debug_show_features(self, features, ax):
-        """ for debugging purposes we're going to output the features """
-        from descartes import PolygonPatch
-        from matplotlib import pyplot
-        BLUE = '#6699cc'
-        #GRAY = '#999999'
-        #fig = pyplot.figure(1)
-        for feat in features:
-            if feat.geom is None:
-                continue
-            if feat.geom.type == 'Polygon':
-                patch1 = PolygonPatch(feat.geom, fc=BLUE, ec=BLUE, alpha=0.25, zorder=2)
-                ax.add_patch(patch1)
-            elif feat.geom.type == 'MultiPolygon':
-                for geom in feat.geom.geoms:
-                    patch1 = PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.25, zorder=2)
-                    ax.add_patch(patch1)
-        #pyplot.axis([960, 1040.5, 1050, 945])
-        #pyplot.grid(True)
-        pyplot.show()
 
     def prepare_layers(self, opts):
         """
@@ -320,20 +302,20 @@ class Kartograph(object):
                     feature.break_into_lines()
 
         # simplify lines
-        print ''
+        total = 0
+        kept = 0
         for id in layers:
-            lines_ = []
-            simplified = []
             if layerOpts[id]['simplify'] is not False:
                 for feature in layerFeatures[id]:
                     lines = feature.break_into_lines()
-                    lines_ += lines
                     lines = simplify_lines(lines, layerOpts[id]['simplify']['method'], layerOpts[id]['simplify']['tolerance'])
-                    simplified += lines
+                    for line in lines:
+                        total += len(line)
+                        for pt in line:
+                            if not pt.deleted:
+                                kept += 1
                     feature.restore_geometry(lines)
-
-            ax = _plot_lines(simplified)
-        return ax
+        return (total, kept)
 
     def crop_layers_to_view(self, layers, layerFeatures, view_poly):
         """
@@ -529,7 +511,7 @@ class Kartograph(object):
 
 def _plot_lines(lines):
     from matplotlib import pyplot
-
+    
     def plot_line(ax, line):
         from shapely.geometry import LineString
         filtered = []
@@ -540,19 +522,48 @@ def _plot_lines(lines):
             return
         ob = LineString(line)
         x, y = ob.xy
-        ax.plot(x, y, '--', color='#999999', linewidth=1, solid_capstyle='round', zorder=1)
+        ax.plot(x, y, '-', color='#333333', linewidth=0.5, solid_capstyle='round', zorder=1)
 
-        ob = LineString(filtered)
-        x, y = ob.xy
-        ax.plot(x, y, '-', color='#dd4444', linewidth=1, solid_capstyle='round', zorder=1)
-        ax.plot(x[0], y[0], 'o', color='#cc0000', zorder=3)
-        ax.plot(x[-1], y[-1], 'o', color='#cc0000', zorder=3)
+        #ob = LineString(filtered)
+        #x, y = ob.xy
+        #ax.plot(x, y, '-', color='#dd4444', linewidth=1, alpha=0.5, solid_capstyle='round', zorder=1)
+        #ax.plot(x[0], y[0], 'o', color='#cc0000', zorder=3)
+        #ax.plot(x[-1], y[-1], 'o', color='#cc0000', zorder=3)
 
-    fig = pyplot.figure(1)
-    ax = fig.add_subplot(111)
+    fig = pyplot.figure(1, figsize=(4, 5.5), dpi=90, subplotpars=SubplotParams(left=0, bottom=0.065, top=1, right=1))
+    ax = fig.add_subplot(111, aspect='equal')
     for line in lines:
         plot_line(ax, line)
-    pyplot.axis([960, 1040.5, 1050, 945])
-    pyplot.grid(True)
-    return ax
-    #pyplot.show()
+    pyplot.grid(False)
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax.set_frame_on(False)
+    return (ax, fig)
+
+
+def _debug_show_features(features, message=None):
+    """ for debugging purposes we're going to output the features """
+    from descartes import PolygonPatch
+    from matplotlib import pyplot
+    from matplotlib.figure import SubplotParams
+
+    fig = pyplot.figure(1, figsize=(4, 5.5), dpi=110, subplotpars=SubplotParams(left=0, bottom=0.065, top=1, right=1))
+    ax = fig.add_subplot(111, aspect='equal')
+    b = (100000, 100000, -100000, -100000)
+    for feat in features:
+        if feat.geom is None:
+            continue
+        c = feat.geom.bounds
+        b = (min(c[0], b[0]), min(c[1], b[1]), max(c[2], b[2]), max(c[3], b[3]))
+        geoms = hasattr(feat.geom, 'geoms') and feat.geom.geoms or [feat.geom]
+        for geom in geoms:
+            patch1 = PolygonPatch(geom, linewidth=0.5, fc='#ffffff', ec='#000000', alpha=0.75, zorder=0)
+            ax.add_patch(patch1)
+    p = (b[2] - b[0]) * 0.05  # some padding
+    pyplot.axis([b[0] - p, b[2] + p, b[3], b[1] - p])
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax.set_frame_on(False)
+    if message:
+        fig.suptitle(message, y=0.04, fontsize=9)
+    pyplot.show()
