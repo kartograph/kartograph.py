@@ -230,8 +230,8 @@ def parse_bounds(opts):
                     data[i] = float(data[i])
             else:
                 raise Error('bounds mode bbox requires array with exactly 4 values [lon0,lat0,lon1,lat]')
-        except Error as err:
-            raise err
+        except Error:
+            raise
         except:
             raise Error('bounds mode bbox requires array with exactly 4 values [lon0,lat0,lon1,lat]')
     elif mode == "points":
@@ -242,8 +242,8 @@ def parse_bounds(opts):
                     pt = map(float, pt)
                 else:
                     raise Error('bounds mode points requires array with (lon,lat) tuples')
-        except Error as err:
-            raise err
+        except Error:
+            raise
         except:
             raise Error('bounds mode points requires array with (lon,lat) tuples')
     elif mode in ("polygons", "polygon"):
