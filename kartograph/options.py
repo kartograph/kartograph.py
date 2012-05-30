@@ -147,8 +147,6 @@ def parse_layer_join(layer):
 
 
 def parse_layer_simplify(layer):
-    if 'filter-islands' not in layer:
-        layer['filter-islands'] = 0.0
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
     if 'simplify' not in layer:
@@ -163,6 +161,8 @@ def parse_layer_simplify(layer):
         layer['simplify']['tolerance'] = float(layer['simplify']['tolerance'])
     except ValueError:
         raise Error('could not convert simplification amount to float')
+    if 'filter-islands' not in layer:
+        layer['filter-islands'] = layer['simplify']['tolerance'] ** 2.0
 
 
 def parse_layer_subtract(layer):
@@ -252,6 +252,8 @@ def parse_bounds(opts):
         bounds['mode'] = mode = "polygons"
         if "layer" not in data or not is_str(data["layer"]):
             raise Error('you must specify a layer for bounds mode ' + mode)
+        if "filter" not in data:
+            data["filter"] = False
         if "attribute" not in data or not is_str(data["attribute"]):
             data["attribute"] = None
         if "values" not in data:
