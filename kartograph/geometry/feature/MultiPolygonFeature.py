@@ -40,12 +40,7 @@ class MultiPolygonFeature(Feature):
 
     def project_geometry(self, proj):
         """ project the geometry """
-        from shapely.geometry import MultiPolygon
-        polygons = self._geoms
-        projected = []
-        for polygon in polygons:
-            projected += _project_polygon(polygon, proj)
-        self.geometry = MultiPolygon(projected)
+        self.geometry = proj.plot(self.geometry)
 
     def compute_topology(self, point_store, precision=None):
         """
@@ -118,42 +113,50 @@ class MultiPolygonFeature(Feature):
         self._topology_lines_per_ring = lines_per_ring
         return lines
 
-    def restore_geometry(self, lines):
+    def restore_geometry(self, lines, minArea=0):
         """
         restores geometry from linear rings
         """
         from shapely.geometry import Polygon, MultiPolygon
-        print self.props['FIPS_1'],
         # at first we restore the rings
         rings = []
+        isIslands = []
         p = 0
         for l in self._topology_lines_per_ring:
             ring = []
+            island = True
             for k in range(p, p + l):
                 line = []
                 for pt in lines[k]:
+                    if len(pt.features) > 1:
+                        island = False
                     if not pt.deleted:
                         line.append((pt[0], pt[1]))
                 ring += line
             p += l
             rings.append(ring)
+            isIslands.append(island)
         # then we restore polygons from rings
         ring_iter = iter(rings)
+        islands_iter = iter(isIslands)
         polygons = []
         holes_total = 0
         for num_hole in self._topology_num_holes:
             ext = ring_iter.next()
-            print len(ext),
+            island = islands_iter.next()
             holes = []
             while num_hole > 0:
                 hole = ring_iter.next()
+                islands_iter.next()  # skip island flag for holes
                 if len(hole) > 3:
                     holes.append(hole)
                 holes_total += 1
                 num_hole -= 1
             if len(ext) > 3:
-                polygons.append(Polygon(ext, holes))
-        print '\t %d polygons \t %d rings \t %d holes' % (len(polygons), len(rings), holes_total)
+                poly = Polygon(ext, holes)
+                if minArea == 0 or not island or poly.area > minArea:
+                    polygons.append(poly)
+
         if len(polygons) > 0:
             self.geometry = MultiPolygon(polygons)
         else:
@@ -163,33 +166,3 @@ class MultiPolygonFeature(Feature):
     def _geoms(self):
         """ returns a list of geoms """
         return hasattr(self.geometry, 'geoms') and self.geometry.geoms or [self.geometry]
-
-
-def _project_polygon(polygon, proj):
-    """ project a shapely.geometry.Polygon
-    returns array of shapely.geometry.Polygon instances
-    """
-    from shapely.geometry import Polygon
-    exterior = polygon.exterior
-    interiors = polygon.interiors
-    out_ext = _project_contours([exterior], proj)
-    out_int = _project_contours(interiors, proj)
-    if len(out_ext) == 0:
-        return []
-    elif len(out_ext) == 1:
-        return [Polygon(out_ext[0], out_int)]
-    elif len(out_ext) > 1 and len(out_int) == 0:
-        res = []
-        for ext in out_ext:
-            res.append(Polygon(ext))
-    else:
-        raise NotImplementedError('not implemented: a polygon with holes was split during map projection')
-
-
-def _project_contours(contours, proj):
-    out = []
-    for ring in contours:
-        pcont = proj.plot(ring.coords)
-        if pcont != None:
-            out += pcont
-    return out
