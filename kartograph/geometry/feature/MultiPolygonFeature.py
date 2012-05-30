@@ -18,7 +18,9 @@ class MultiPolygonFeature(Feature):
             fmt = '%.' + str(round) + 'f'
             fmt = fmt + ',' + fmt
         for polygon in self._geoms:
-            for ring in [polygon.exterior] + polygon.interiors:
+            if polygon is None:
+                continue
+            for ring in [polygon.exterior] + list(polygon.interiors):
                 cont_str = ""
                 kept = []
                 for pt in ring.coords:
@@ -33,10 +35,10 @@ class MultiPolygonFeature(Feature):
                     cont_str += fmt % pt
                 cont_str += "Z "
                 path_str += cont_str
-            if path_str == "":
-                return None
-            path = svg.node('path', d=path_str)
-            return path
+        if path_str == "":
+            return None
+        path = svg.node('path', d=path_str)
+        return path
 
     def project_geometry(self, proj):
         """ project the geometry """
