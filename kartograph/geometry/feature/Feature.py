@@ -34,7 +34,13 @@ class Feature:
             try:
                 self.geometry = self.geometry.intersection(geometry)
             except TopologicalError:
-                self.geometry = None
+            #    print "intersection removed geometry"
+            #    debug(self.geometry)
+            #    debug(geometry)
+                if not self.geometry.is_valid:
+                    print "warning: geometry is invalid"
+                else:
+                    self.geometry = None
 
     def substract_geom(self, geom):
         if self.geometry:
