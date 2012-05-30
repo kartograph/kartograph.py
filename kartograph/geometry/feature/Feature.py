@@ -1,5 +1,6 @@
 
 from kartograph.errors import KartographError
+from shapely.geos import TopologicalError
 import re
 
 
@@ -25,13 +26,19 @@ class Feature:
         self.apply_contours(contours)
 
     def project_view(self, view):
-        self.geometry = self.geometry.project_view(view)
+        if self.geometry:
+            self.geometry = view.project_geometry(self.geometry)
 
     def crop_to(self, geometry):
-        self.geometry = self.geometry.intersection(geometry)
+        if self.geometry:
+            try:
+                self.geometry = self.geometry.intersection(geometry)
+            except TopologicalError:
+                self.geometry = None
 
     def substract_geom(self, geom):
-        self.geometry = self.geometry.substract_geom(geom)
+        if self.geometry:
+            self.geometry = self.geometry.substract_geom(geom)
 
     def geometry_to_svg(self, svg, round):
         raise NotImplementedError('geometry_to_svg() needs to be implemented by geometry specific Feature classes')
@@ -40,7 +47,7 @@ class Feature:
         raise NotImplementedError('geometry_to_kml() needs to be implemented by geometry specific Feature classes')
 
     def project_geometry(self, proj):
-        raise NotImplementedError('project_geometry() needs to be implemented by geometry specific Feature classes')
+        self.geometry = proj.plot(self.geometry)
 
     def to_svg(self, svg, round, attributes=[], styles=None):
         node = self.geometry_to_svg(svg, round)
