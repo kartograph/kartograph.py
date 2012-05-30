@@ -20,10 +20,16 @@ def is_clockwise(pts):
 
 
 def bbox_to_polygon(bbox):
-    from polygon import MultiPolygon
+    from shapely.geometry import Polygon
     s = bbox
-    poly = MultiPolygon([[(s.left,s.bottom),(s.left,s.top),(s.right,s.top),(s.right,s.bottom)]])
+    poly = Polygon([(s.left, s.bottom), (s.left, s.top), (s.right, s.top), (s.right, s.bottom)])
     return poly
+
+
+def geom_to_bbox(geom):
+    from kartograph.geometry import BBox
+    minx, miny, maxx, maxy = geom.bounds
+    return BBox(width=maxx - minx, height=maxy - miny, left=minx, top=miny)
 
 
 def join_features(features, props):
@@ -43,8 +49,10 @@ def join_features(features, props):
         else:
             joined.append(feat)  # cannot join this
 
-    poly = polygons[0]
-    for poly2 in polygons[1:]:
-        poly = poly.union(poly2)
-    joined.append(MultiPolygonFeature(poly, props))
+    polygons = filter(lambda x: x is not None, polygons)
+    if len(polygons) > 0:
+        poly = polygons[0]
+        for poly2 in polygons[1:]:
+            poly = poly.union(poly2)
+        joined.append(MultiPolygonFeature(poly, props))
     return joined
