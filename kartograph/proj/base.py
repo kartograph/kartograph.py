@@ -17,6 +17,8 @@
 """
 
 import math
+from kartograph.errors import KartographError
+from shapely.geometry import Polygon, LineString, Point, MultiPolygon, MultiLineString, MultiPoint
 
 
 class Proj(object):
@@ -31,10 +33,63 @@ class Proj(object):
     minLon = -180
     maxLon = 180
 
-    def plot(self, polygon, truncate=True):
+    def _shift_polygon(self, polygon):
+        return [polygon]  # no shifting
+
+    def plot(self, geometry):
+        geometries = hasattr(geometry, 'geoms') and geometry.geoms or [geometry]
+        res = []
+
+        # at first shift polygons
+        #geometries = []
+        #for geom in unshifted_geometries:
+        #    geometries += self._shift_polygon(geom)
+
+        for geom in geometries:
+            if isinstance(geom, Polygon):
+                res += self.plot_polygon(geom)
+            elif isinstance(geom, LineString):
+                rings = self.plot_linear_ring(geom.coords)
+                res += map(LineString, rings)
+            elif isinstance(geom, Point):
+                if self._visible(geom.x, geom.y):
+                    x, y = self.project(geom.x, geom.y)
+                    res.append(Point(x, y))
+            else:
+                raise KartographError('unknown geometry type %s' % geometry)
+
+        if len(res) > 0:
+            if isinstance(res[0], Polygon):
+                if len(res) > 1:
+                    return MultiPolygon(res)
+                else:
+                    return res[0]
+            elif isinstance(res[0], LineString):
+                if len(res) > 1:
+                    return MultiLineString(res)
+                else:
+                    return LineString(res[0])
+            else:
+                if len(res) > 1:
+                    return MultiPoint(res)
+                else:
+                    return Point(res[0][0], res[0][1])
+
+    def plot_polygon(self, polygon):
+        ext = self.plot_linear_ring(polygon.exterior, truncate=True)
+        if len(ext) == 1:
+            pts_int = []
+            for interior in polygon.interiors:
+                pts_int += self.plot_linear_ring(interior, truncate=True)
+            return [Polygon(ext[0], pts_int)]
+        elif len(ext) == 0:
+            return []
+        else:
+            raise KartographError('unhandled case: exterior is split into multiple rings')
+
+    def plot_linear_ring(self, ring, truncate=False):
         points = []
-        ignore = True
-        for (lon, lat) in polygon:
+        for (lon, lat) in ring.coords:
             vis = self._visible(lon, lat)
             if vis:
                 ignore = False
@@ -44,7 +99,7 @@ class Proj(object):
             else:
                 points.append((x, y))
         if ignore:
-            return None
+            return []
         return [points]
 
     def ll(self, lon, lat):
@@ -65,10 +120,15 @@ class Proj(object):
             bbox.update((x, y))
         return bbox
 
-    def sea_coords(self, llbbox=(-180, -90, 180, 90)):
+    def bounding_geometry(self, llbbox=(-180, -90, 180, 90), projected=False):
         """
-        returns non-projected multi-polygon map bounds
+        returns a WGS84 polygon that represents the limits of this projection
+        points that lie outside this polygon will not be plotted
+        this polygon will also be used to render the sea layer in world maps
+
+        defaults to full WGS84 range
         """
+        from shapely.geometry import Polygon
         sea = []
 
         minLon = llbbox[0]
@@ -98,21 +158,10 @@ class Proj(object):
         for lon in xfrange(maxLon, minLon, lon_step):
             sea.append((lon, minLat))
 
-        return [sea]
+        if projected:
+            sea = [self.project(lon, lat) for (lon, lat) in sea]
 
-    def sea_shape(self, llbbox=(-180, -90, 180, 90)):
-        """
-        returns projected multi-polygon map bounds
-        """
-        sea = self.sea_coords(llbbox)
-        out = []
-        for poly in sea:
-            p = []
-            for s in poly:
-                lon, lat = s
-                p.append(self.project(lon, lat))
-            out.append(p)
-        return out
+        return Polygon(sea)
 
     def __str__(self):
         return 'Proj(' + self.name + ')'
