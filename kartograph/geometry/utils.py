@@ -26,10 +26,36 @@ def bbox_to_polygon(bbox):
     return poly
 
 
-def geom_to_bbox(geom):
+def geom_to_bbox(geom, min_area=0):
     from kartograph.geometry import BBox
-    minx, miny, maxx, maxy = geom.bounds
-    return BBox(width=maxx - minx, height=maxy - miny, left=minx, top=miny)
+    from shapely.geometry import MultiPolygon
+    if min_area == 0 or not isinstance(geom, MultiPolygon):
+        # if no minimum area ratio is set or the geometry
+        # is not a multipart geometry, we simply use the
+        # full bbox
+        minx, miny, maxx, maxy = geom.bounds
+        return BBox(width=maxx - minx, height=maxy - miny, left=minx, top=miny)
+    else:
+        # for multipart geometry we use only the bbox of
+        # the 'biggest' sub-geometries, depending on min_area
+        bbox = BBox()
+        areas = []
+        bb = []
+        for polygon in geom.geoms:
+            areas.append(polygon.area)
+        max_a = max(areas)
+        for i in range(len(geom.geoms)):
+            a = areas[i]
+            if a < max_a * min_area:
+                # ignore this sub polygon since it is too small
+                continue
+            bb.append(geom.geoms[i].bounds)
+    for b in bb:
+        bbox.update((b[0], b[2]))
+        bbox.update((b[1], b[2]))
+        bbox.update((b[0], b[3]))
+        bbox.update((b[1], b[3]))
+    return bbox
 
 
 def join_features(features, props):
