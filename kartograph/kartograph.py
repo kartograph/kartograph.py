@@ -2,8 +2,9 @@
 from options import parse_options
 from layersource import handle_layer_source
 from geometry import BBox, View, MultiPolygon
+from geometry.utils import geom_to_bbox
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString, MultiPolygon, MultiLineString
 from proj import projections
 from filter import filter_record
 from errors import *
@@ -25,41 +26,47 @@ class Kartograph(object):
         self._verbose = 'verbose' in opts and opts['verbose']
         self.prepare_layers(opts)
 
-        proj = self.get_projection(opts)
-        bounds_poly = self.get_bounds(opts, proj)
-        bbox = bounds_poly.bbox()
+        layers = []
+        layerOpts = {}
+
+        for layer in opts['layers']:
+            id = layer['id']
+            layerOpts[id] = layer
+            layers.append(id)
+
+        proj = self.get_projection(opts, layerOpts)
+        bounds_poly = self.get_bounds(opts, proj, layerOpts)
+
+        #_plot_geometry(bounds_poly)
+
+        bbox = geom_to_bbox(bounds_poly)
 
         view = self.get_view(opts, bbox)
         w = view.width
         h = view.height
         view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
-        # view_poly = bounds_poly.project_view(view)
 
         svg = self.init_svg_canvas(opts, proj, view, bbox)
 
-        layers = []
-        layerOpts = {}
         layerFeatures = {}
 
         # get features
         for layer in opts['layers']:
             id = layer['id']
-            layerOpts[id] = layer
-            layers.append(id)
             features = self.get_features(layer, proj, view, opts, view_poly)
             layerFeatures[id] = features
 
-        _debug_show_features(layerFeatures[id], 'original')
+        #_debug_show_features(layerFeatures[id], 'original')
         self.join_layers(layers, layerOpts, layerFeatures)
-        _debug_show_features(layerFeatures[id], 'joined')
-        self.simplify_layers(layers, layerFeatures, layerOpts)
-        _debug_show_features(layerFeatures[id], 'simplified')
+        #_debug_show_features(layerFeatures[id], 'joined')
         self.crop_layers_to_view(layers, layerFeatures, view_poly)
-        _debug_show_features(layerFeatures[id], 'cropped to view')
-        exit()
+        #_debug_show_features(layerFeatures[id], 'cropped to view')
+        self.simplify_layers(layers, layerFeatures, layerOpts)
+        #_debug_show_features(layerFeatures[id], 'simplified')
+        #exit()
 
-        self.crop_layers(layers, layerOpts, layerFeatures)
-        self.substract_layers(layers, layerOpts, layerFeatures)
+        #self.crop_layers(layers, layerOpts, layerFeatures)
+        #self.substract_layers(layers, layerOpts, layerFeatures)
         self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
 
         if outfile is None:
@@ -85,11 +92,11 @@ class Kartograph(object):
             src = handle_layer_source(layer, self.layerCache)
             layers[id] = src
 
-    def get_projection(self, opts):
+    def get_projection(self, opts, layerOpts):
         """
         instantiates the map projection
         """
-        map_center = self.get_map_center(opts)
+        map_center = self.get_map_center(opts, layerOpts)
         projC = projections[opts['proj']['id']]
         p_opts = {}
         for prop in opts['proj']:
@@ -102,7 +109,7 @@ class Kartograph(object):
         proj = projC(**p_opts)
         return proj
 
-    def get_map_center(self, opts):
+    def get_map_center(self, opts, layerOpts):
         """
         depends on the bounds config
         """
@@ -124,7 +131,7 @@ class Kartograph(object):
                 lat0 += m * lat
 
         elif mode[:4] == 'poly':
-            features = self.get_bounds_polygons(opts)
+            features = self.get_bounds_polygons(opts, layerOpts)
             if len(features) > 0:
                 if isinstance(features[0].geom, BaseGeometry):
                     (lon0, lat0) = features[0].geom.representative_point().coords[0]
@@ -135,12 +142,12 @@ class Kartograph(object):
             print "unrecognized bound mode", mode
         return (lon0, lat0)
 
-    def get_bounds(self, opts, proj):
+    def get_bounds(self, opts, proj, layerOpts):
         """
         computes the (x,y) bounding box for the map,
         given a specific projection
         """
-        from geometry.utils import bbox_to_polygon
+        from geometry.utils import bbox_to_polygon, geom_to_bbox
 
         bnds = opts['bounds']
         mode = bnds['mode'][:]
@@ -150,9 +157,8 @@ class Kartograph(object):
             print 'bounds mode', mode
 
         if mode == "bbox":  # catch special case bbox
-            sea = proj.sea_shape(data)
-            spoly = MultiPolygon(sea)
-            sbbox = spoly.bbox()
+            sea = proj.bounding_geometry(data, projected=True)
+            sbbox = geom_to_bbox(sea)
             sbbox.inflate(sbbox.width * bnds['padding'])
             return bbox_to_polygon(sbbox)
 
@@ -164,17 +170,18 @@ class Kartograph(object):
                 bbox.update(pt)
 
         if mode[:4] == "poly":
-            features = self.get_bounds_polygons(opts)
+            features = self.get_bounds_polygons(opts, layerOpts)
             if len(features) > 0:
                 for feature in features:
-                    fbbox = feature.project(proj).bbox(data["min-area"])
+                    feature.project(proj)
+                    fbbox = geom_to_bbox(feature.geometry, data["min-area"])
                     bbox.join(fbbox)
             else:
                 raise KartographError('no features found for calculating the map bounds')
         bbox.inflate(bbox.width * bnds['padding'])
         return bbox_to_polygon(bbox)
 
-    def get_bounds_polygons(self, opts):
+    def get_bounds_polygons(self, opts, layerOpts):
         """
         for bounds mode "polygons" this helper function
         returns a list of all polygons that the map should
@@ -186,11 +193,19 @@ class Kartograph(object):
         if id not in self.layers:
             raise KartographError('layer not found "%s"' % id)
         layer = self.layers[id]
-        attr = data['attribute']
-        if not attr:
-            filter = None
+        layerOpts = layerOpts[id]
+
+        if layerOpts['filter'] is False:
+            layerFilter = lambda a: True
         else:
-            filter = lambda rec: rec[attr] in data['values']
+            layerFilter = lambda rec: filter_record(layerOpts['filter'], rec)
+
+        if data['filter']:
+            boundsFilter = lambda rec: filter_record(data['filter'], rec)
+        else:
+            boundsFilter = lambda a: True
+
+        filter = lambda rec: layerFilter(rec) and boundsFilter(rec)
         features = layer.get_features(filter=filter)
         return features
 
@@ -246,7 +261,10 @@ class Kartograph(object):
         for feature in features:
             if not is_projected:
                 feature.project(proj)
-            #feature.project_view(view)
+            feature.project_view(view)
+
+        # remove features that don't intersect our view polygon
+        features = [feature for feature in features if feature.geometry and feature.geometry.intersects(view_poly)]
 
         return features
 
@@ -311,7 +329,7 @@ class Kartograph(object):
                         for pt in line:
                             if not pt.deleted:
                                 kept += 1
-                    feature.restore_geometry(lines)
+                    feature.restore_geometry(lines, layerOpts[id]['filter-islands'])
         return (total, kept)
 
     def crop_layers_to_view(self, layers, layerFeatures, view_poly):
@@ -319,12 +337,16 @@ class Kartograph(object):
         cuts the layer features to the map view
         """
         for id in layers:
-            out = []
+            #out = []
             for feat in layerFeatures[id]:
+                if not feat.geometry.is_valid:
+                    pass
+                    #print feat.geometry
+                    #_plot_geometry(feat.geometry)
                 feat.crop_to(view_poly)
-                if not feat.is_empty():
-                    out.append(feat)
-            layerFeatures[id] = out
+                #if not feat.is_empty():
+                #    out.append(feat)
+            #layerFeatures[id] = out
 
     def crop_layers(self, layers, layerOpts, layerFeatures):
         """
@@ -420,12 +442,15 @@ class Kartograph(object):
             if self._verbose:
                 print id
             if len(layerFeatures[id]) == 0:
+                print "ignoring layer", id
                 continue  # ignore empty layers
             g = svg.node('g', svg.root, id=id)
             for feat in layerFeatures[id]:
                 node = feat.to_svg(svg, opts['export']['round'], layerOpts[id]['attributes'])
                 if node is not None:
                     g.appendChild(node)
+                else:
+                    print "feature.to_svg is None", feat
             if 'styles' in layerOpts[id]:
                 for prop in layerOpts[id]['styles']:
                     g.setAttribute(prop, str(layerOpts[id]['styles'][prop]))
@@ -506,11 +531,38 @@ class Kartograph(object):
             kml.Document.append(g)
 
 
+def _plot_geometry(geom, fill='#ffcccc', stroke='#333333', alpha=1, msg=None):
+    from matplotlib import pyplot
+    from matplotlib.figure import SubplotParams
+    from descartes import PolygonPatch
+
+    if isinstance(geom, (Polygon, MultiPolygon)):
+        b = geom.bounds
+        # b = (min(c[0], b[0]), min(c[1], b[1]), max(c[2], b[2]), max(c[3], b[3]))
+        geoms = hasattr(geom, 'geoms') and geom.geoms or [geom]
+        w, h = (b[2] - b[0], b[3] - b[1])
+        ratio = w / h
+        pad = 0.15
+        fig = pyplot.figure(1, figsize=(5, 5 / ratio), dpi=110, subplotpars=SubplotParams(left=pad, bottom=pad, top=1 - pad, right=1 - pad))
+        ax = fig.add_subplot(111, aspect='equal')
+        for geom in geoms:
+            patch1 = PolygonPatch(geom, linewidth=0.5, fc=fill, ec=stroke, alpha=alpha, zorder=0)
+            ax.add_patch(patch1)
+    p = (b[2] - b[0]) * 0.03  # some padding
+    pyplot.axis([b[0] - p, b[2] + p, b[3] + p, b[1] - p])
+    #ax.xaxis.set_visible(False)
+    #ax.yaxis.set_visible(False)
+    #ax.set_frame_on(False)
+    pyplot.grid(True)
+    if msg:
+        fig.suptitle(msg, y=0.04, fontsize=9)
+    pyplot.show()
+
+
 def _plot_lines(lines):
     from matplotlib import pyplot
-    
+
     def plot_line(ax, line):
-        from shapely.geometry import LineString
         filtered = []
         for pt in line:
             if not pt.deleted:
@@ -544,7 +596,7 @@ def _debug_show_features(features, message=None):
     from matplotlib import pyplot
     from matplotlib.figure import SubplotParams
 
-    fig = pyplot.figure(1, figsize=(4, 5.5), dpi=110, subplotpars=SubplotParams(left=0, bottom=0.065, top=1, right=1))
+    fig = pyplot.figure(1, figsize=(9, 5.5), dpi=110, subplotpars=SubplotParams(left=0, bottom=0.065, top=1, right=1))
     ax = fig.add_subplot(111, aspect='equal')
     b = (100000, 100000, -100000, -100000)
     for feat in features:
@@ -554,13 +606,13 @@ def _debug_show_features(features, message=None):
         b = (min(c[0], b[0]), min(c[1], b[1]), max(c[2], b[2]), max(c[3], b[3]))
         geoms = hasattr(feat.geom, 'geoms') and feat.geom.geoms or [feat.geom]
         for geom in geoms:
-            patch1 = PolygonPatch(geom, linewidth=0.5, fc='#ffffff', ec='#000000', alpha=0.75, zorder=0)
+            patch1 = PolygonPatch(geom, linewidth=0.25, fc='#ddcccc', ec='#000000', alpha=0.75, zorder=0)
             ax.add_patch(patch1)
     p = (b[2] - b[0]) * 0.05  # some padding
     pyplot.axis([b[0] - p, b[2] + p, b[3], b[1] - p])
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    ax.set_frame_on(False)
+    ax.set_frame_on(True)
     if message:
         fig.suptitle(message, y=0.04, fontsize=9)
     pyplot.show()
