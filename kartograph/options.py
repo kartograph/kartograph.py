@@ -147,6 +147,8 @@ def parse_layer_join(layer):
 
 
 def parse_layer_simplify(layer):
+    if 'filter-islands' not in layer:
+        layer['filter-islands'] = 0.0
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
     if 'simplify' not in layer:
