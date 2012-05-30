@@ -88,6 +88,7 @@ class Proj(object):
             raise KartographError('unhandled case: exterior is split into multiple rings')
 
     def plot_linear_ring(self, ring, truncate=False):
+        ignore = True
         points = []
         for (lon, lat) in ring.coords:
             vis = self._visible(lon, lat)
