@@ -41,9 +41,12 @@ class Proj(object):
         res = []
 
         # at first shift polygons
-        #geometries = []
-        #for geom in unshifted_geometries:
-        #    geometries += self._shift_polygon(geom)
+        #shifted = []
+        #for geom in geometries:
+        #    if isinstance(geom, Polygon):
+        #        shifted += self._shift_polygon(geom)
+        #    else:
+        #        shifted += [geom]
 
         for geom in geometries:
             if isinstance(geom, Polygon):
@@ -56,7 +59,8 @@ class Proj(object):
                     x, y = self.project(geom.x, geom.y)
                     res.append(Point(x, y))
             else:
-                raise KartographError('unknown geometry type %s' % geometry)
+                pass
+                # raise KartographError('proj.plot(): unknown geometry type %s' % geom)
 
         if len(res) > 0:
             if isinstance(res[0], Polygon):

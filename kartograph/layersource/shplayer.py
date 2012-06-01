@@ -46,7 +46,7 @@ class ShapefileLayer(LayerSource):
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
-    def get_features(self, attr=None, filter=None, bbox=None, verbose=False):
+    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False):
         """
         returns a list of features matching to the attr -> value pair
         """
@@ -69,7 +69,7 @@ class ShapefileLayer(LayerSource):
 
                 shp = self.get_shape(i)
 
-                geom = shape2geometry(shp)
+                geom = shape2geometry(shp, ignore_holes=ignore_holes)
 
                 #if bbox is not None and not bbox.intersects(geom.bbox()):
                 #    ignored += 1
@@ -82,9 +82,9 @@ class ShapefileLayer(LayerSource):
         return res
 
 
-def shape2geometry(shp):
+def shape2geometry(shp, ignore_holes=False):
     if shp.shapeType in (5, 15):  # multi-polygon
-        geom = shape2polygon(shp)
+        geom = shape2polygon(shp, ignore_holes=ignore_holes)
     elif shp.shapeType == 3:  # line
         geom = points2line(shp)
     else:
@@ -92,7 +92,7 @@ def shape2geometry(shp):
     return geom
 
 
-def shape2polygon(shp):
+def shape2polygon(shp, ignore_holes=False):
     """
     converts a shapefile polygon to geometry.MultiPolygon
     """
@@ -114,6 +114,8 @@ def shape2polygon(shp):
             exteriors.append(pts)
         else:
             holes.append(pts)
+    if ignore_holes:
+        holes = None
     if len(exteriors) == 1:
         poly = MultiPolygon([Polygon(exteriors[0], holes)])
     elif len(exteriors) > 1:

@@ -43,6 +43,8 @@ def parse_proj(opts):
     for attr in prjClass.attributes():
         if attr not in prj:
             prj[attr] = "auto"
+        else:
+            prj[attr] = float(prj[attr])
 
 
 def parse_layers(opts):
@@ -94,9 +96,9 @@ def parse_layer_attributes(layer):
     attrs = []
     for attr in layer['attributes']:
         if is_str(attr):
-            if isinstance(layer['attributes'], list):
+            if isinstance(layer['attributes'], list):  # ["ISO_A3", "FIPS"]
                 attrs.append({'src': attr, 'tgt': attr})
-            elif isinstance(layer['attributes'], dict):
+            elif isinstance(layer['attributes'], dict):  # { "ISO_A3": "iso" }
                 attrs.append({'src': attr, 'tgt': layer['attributes'][attr]})
         elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
             attrs.append(attr)

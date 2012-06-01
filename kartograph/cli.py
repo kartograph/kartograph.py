@@ -9,6 +9,22 @@ import json
 from errors import KartographError
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+
+    def disable(self):
+        self.HEADER = ''
+        self.OKBLUE = ''
+        self.OKGREEN = ''
+        self.WARNING = ''
+        self.FAIL = ''
+        self.ENDC = ''
+
 parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles')
 #parser.add_argument('command', type=str, choices=['svg', 'kml', 'generate'], help='specifies what kartograph is supposed to do')
 
@@ -63,7 +79,16 @@ def svg(args):
     K = Kartograph()
     try:
         K.generate(cfg, args.output)
-    except KartographError, e:
+    except Exception, e:
+        import traceback, sys
+        ignore_path_len = len(__file__) - 7
+        exc = sys.exc_info()
+        for (filename, line, func, code) in traceback.extract_tb(exc[2]):
+            if filename[:len(__file__) - 7] == __file__[:-7]:
+                print '  \033[1;33;40m%s\033[0m, \033[0;37;40min\033[0m %s()\n  \033[1;31;40m%d:\033[0m \033[0;37;40m%s\033[0m' % (filename[ignore_path_len:], func, line, code)
+            else:
+                print '  %s, in %s()\n  %d: %s' % (filename, func, line, code)
+        print
         print e
         exit(-1)
 

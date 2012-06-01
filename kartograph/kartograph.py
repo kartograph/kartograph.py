@@ -1,10 +1,10 @@
 
 from options import parse_options
 from layersource import handle_layer_source
-from geometry import BBox, View, MultiPolygon
+from geometry import BBox, View
 from geometry.utils import geom_to_bbox
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import Polygon, LineString, MultiPolygon, MultiLineString
+from shapely.geometry import Polygon, LineString, MultiPolygon
 from proj import projections
 from filter import filter_record
 from errors import *
@@ -24,7 +24,7 @@ class Kartograph(object):
         """
         parse_options(opts)
         self._verbose = 'verbose' in opts and opts['verbose']
-        self.prepare_layers(opts)
+        self._prepare_layers(opts)
 
         layers = []
         layerOpts = {}
@@ -34,40 +34,41 @@ class Kartograph(object):
             layerOpts[id] = layer
             layers.append(id)
 
-        proj = self.get_projection(opts, layerOpts)
-        bounds_poly = self.get_bounds(opts, proj, layerOpts)
+        proj = self._get_projection(opts, layerOpts)
+        bounds_poly = self._get_bounds(opts, proj, layerOpts)
 
         #_plot_geometry(bounds_poly)
 
         bbox = geom_to_bbox(bounds_poly)
 
-        view = self.get_view(opts, bbox)
+        view = self._get_view(opts, bbox)
         w = view.width
         h = view.height
         view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
 
-        svg = self.init_svg_canvas(opts, proj, view, bbox)
+        svg = self._init_svg_canvas(opts, proj, view, bbox)
 
         layerFeatures = {}
 
         # get features
         for layer in opts['layers']:
             id = layer['id']
-            features = self.get_features(layer, proj, view, opts, view_poly)
+            features = self._get_features(layer, proj, view, opts, view_poly)
             layerFeatures[id] = features
 
         #_debug_show_features(layerFeatures[id], 'original')
-        self.join_layers(layers, layerOpts, layerFeatures)
+        self._join_layers(layers, layerOpts, layerFeatures)
         #_debug_show_features(layerFeatures[id], 'joined')
-        self.crop_layers_to_view(layers, layerFeatures, view_poly)
+        self._crop_layers_to_view(layers, layerFeatures, view_poly)
         #_debug_show_features(layerFeatures[id], 'cropped to view')
-        self.simplify_layers(layers, layerFeatures, layerOpts)
+        self._simplify_layers(layers, layerFeatures, layerOpts)
         #_debug_show_features(layerFeatures[id], 'simplified')
         #exit()
 
         #self.crop_layers(layers, layerOpts, layerFeatures)
-        #self.substract_layers(layers, layerOpts, layerFeatures)
-        self.store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
+        self._subtract_layers(layers, layerOpts, layerFeatures)
+
+        self._store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
 
         if outfile is None:
             if preview:
@@ -75,9 +76,11 @@ class Kartograph(object):
             else:
                 return svg.tostring()
         else:
+            if preview:
+                svg.preview()
             svg.save(outfile)
 
-    def prepare_layers(self, opts):
+    def _prepare_layers(self, opts):
         """
         prepares layer sources
         """
@@ -92,11 +95,11 @@ class Kartograph(object):
             src = handle_layer_source(layer, self.layerCache)
             layers[id] = src
 
-    def get_projection(self, opts, layerOpts):
+    def _get_projection(self, opts, layerOpts):
         """
         instantiates the map projection
         """
-        map_center = self.get_map_center(opts, layerOpts)
+        map_center = self._get_map_center(opts, layerOpts)
         projC = projections[opts['proj']['id']]
         p_opts = {}
         for prop in opts['proj']:
@@ -109,7 +112,7 @@ class Kartograph(object):
         proj = projC(**p_opts)
         return proj
 
-    def get_map_center(self, opts, layerOpts):
+    def _get_map_center(self, opts, layerOpts):
         """
         depends on the bounds config
         """
@@ -131,7 +134,7 @@ class Kartograph(object):
                 lat0 += m * lat
 
         elif mode[:4] == 'poly':
-            features = self.get_bounds_polygons(opts, layerOpts)
+            features = self._get_bounds_polygons(opts, layerOpts)
             if len(features) > 0:
                 if isinstance(features[0].geom, BaseGeometry):
                     (lon0, lat0) = features[0].geom.representative_point().coords[0]
@@ -142,7 +145,7 @@ class Kartograph(object):
             print "unrecognized bound mode", mode
         return (lon0, lat0)
 
-    def get_bounds(self, opts, proj, layerOpts):
+    def _get_bounds(self, opts, proj, layerOpts):
         """
         computes the (x,y) bounding box for the map,
         given a specific projection
@@ -170,7 +173,7 @@ class Kartograph(object):
                 bbox.update(pt)
 
         if mode[:4] == "poly":
-            features = self.get_bounds_polygons(opts, layerOpts)
+            features = self._get_bounds_polygons(opts, layerOpts)
             if len(features) > 0:
                 for feature in features:
                     feature.project(proj)
@@ -181,7 +184,7 @@ class Kartograph(object):
         bbox.inflate(bbox.width * bnds['padding'])
         return bbox_to_polygon(bbox)
 
-    def get_bounds_polygons(self, opts, layerOpts):
+    def _get_bounds_polygons(self, opts, layerOpts):
         """
         for bounds mode "polygons" this helper function
         returns a list of all polygons that the map should
@@ -209,7 +212,7 @@ class Kartograph(object):
         features = layer.get_features(filter=filter)
         return features
 
-    def get_view(self, opts, bbox):
+    def _get_view(self, opts, bbox):
         """
         returns the output view
         """
@@ -227,7 +230,7 @@ class Kartograph(object):
             w = h * ratio
         return View(bbox, w, h - 1)
 
-    def get_features(self, layer, proj, view, opts, view_poly):
+    def _get_features(self, layer, proj, view, opts, view_poly):
         """
         returns a list of projected and filtered features of a layer
         """
@@ -246,7 +249,7 @@ class Kartograph(object):
                 filter = None
             else:
                 filter = lambda rec: filter_record(layer['filter'], rec)
-            features = src.get_features(filter=filter, bbox=bbox, verbose=self._verbose)
+            features = src.get_features(filter=filter, bbox=bbox, verbose=self._verbose, ignore_holes='ignore-holes' in layer and layer['ignore-holes'])
 
         elif 'special' in layer:  # special layers need special treatment
             if layer['special'] == "graticule":
@@ -255,7 +258,7 @@ class Kartograph(object):
                 features = src.get_features(lats, lons, proj, bbox=bbox)
 
             elif layer['special'] == "sea":
-                features = src.get_features(proj.sea_shape())
+                features = src.get_features(proj)
                 is_projected = True
 
         for feature in features:
@@ -268,7 +271,7 @@ class Kartograph(object):
 
         return features
 
-    def init_svg_canvas(self, opts, proj, view, bbox):
+    def _init_svg_canvas(self, opts, proj, view, bbox):
         """
         prepare a blank new svg file
         """
@@ -296,7 +299,7 @@ class Kartograph(object):
 
         return svg
 
-    def simplify_layers(self, layers, layerFeatures, layerOpts):
+    def _simplify_layers(self, layers, layerFeatures, layerOpts):
         """
         performs polygon simplification
         """
@@ -332,7 +335,7 @@ class Kartograph(object):
                     feature.restore_geometry(lines, layerOpts[id]['filter-islands'])
         return (total, kept)
 
-    def crop_layers_to_view(self, layers, layerFeatures, view_poly):
+    def _crop_layers_to_view(self, layers, layerFeatures, view_poly):
         """
         cuts the layer features to the map view
         """
@@ -348,7 +351,7 @@ class Kartograph(object):
                 #    out.append(feat)
             #layerFeatures[id] = out
 
-    def crop_layers(self, layers, layerOpts, layerFeatures):
+    def _crop_layers(self, layers, layerOpts, layerFeatures):
         """
         handles crop-to
         """
@@ -356,7 +359,7 @@ class Kartograph(object):
             if layerOpts[id]['crop-to'] is not False:
                 cropped_features = []
                 for tocrop in layerFeatures[id]:
-                    cbbox = tocrop.geom.bbox()
+                    cbbox = geom_to_bbox(tocrop.geom)
                     crop_at_layer = layerOpts[id]['crop-to']
                     if crop_at_layer not in layers:
                         raise KartographError('you want to substract from layer "%s" which cannot be found' % crop_at_layer)
@@ -366,23 +369,25 @@ class Kartograph(object):
                             cropped_features.append(tocrop)
                 layerFeatures[id] = cropped_features
 
-    def substract_layers(self, layers, layerOpts, layerFeatures):
+    def _subtract_layers(self, layers, layerOpts, layerFeatures):
         """
-        handles substract-from
+        handles subtract-from
         """
         for id in layers:
             if layerOpts[id]['subtract-from'] is not False:
                 for feat in layerFeatures[id]:
-                    cbbox = feat.geom.bbox()
+                    if feat.geom is None:
+                        continue
+                    cbbox = geom_to_bbox(feat.geom)
                     for subid in layerOpts[id]['subtract-from']:
                         if subid not in layers:
-                            raise KartographError('you want to substract from layer "%s" which cannot be found' % subid)
+                            raise KartographError('you want to subtract from layer "%s" which cannot be found' % subid)
                         for sfeat in layerFeatures[subid]:
-                            if sfeat.geom.bbox().intersects(cbbox):
-                                sfeat.substract_geom(feat.geom)
+                            if sfeat.geom and geom_to_bbox(sfeat.geom).intersects(cbbox):
+                                sfeat.subtract_geom(feat.geom)
                 layerFeatures[id] = []
 
-    def join_layers(self, layers, layerOpts, layerFeatures):
+    def _join_layers(self, layers, layerOpts, layerFeatures):
         """
         joins features in layers
         """
@@ -434,7 +439,7 @@ class Kartograph(object):
                         res += join_features(groupFeatures[g_id], props)
                 layerFeatures[id] = res
 
-    def store_layers_svg(self, layers, layerOpts, layerFeatures, svg, opts):
+    def _store_layers_svg(self, layers, layerOpts, layerFeatures, svg, opts):
         """
         store features in svg
         """
@@ -503,7 +508,7 @@ class Kartograph(object):
         from lxml import etree
         outfile.write(etree.tostring(kml, pretty_print=True))
 
-    def init_kml_canvas(self):
+    def _init_kml_canvas(self):
         from pykml.factory import KML_ElementMaker as KML
         kml = KML.kml(
             KML.Document(
@@ -512,7 +517,7 @@ class Kartograph(object):
         )
         return kml
 
-    def store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
+    def _store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
         """
         store features in kml (projected to WGS84 latlon)
         """

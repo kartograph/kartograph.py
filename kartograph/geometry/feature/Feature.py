@@ -31,20 +31,20 @@ class Feature:
 
     def crop_to(self, geometry):
         if self.geometry:
-            try:
-                self.geometry = self.geometry.intersection(geometry)
-            except TopologicalError:
-            #    print "intersection removed geometry"
-            #    debug(self.geometry)
-            #    debug(geometry)
-                if not self.geometry.is_valid:
-                    print "warning: geometry is invalid"
+            if self.geometry.is_valid:
+                if self.geometry.intersects(geometry):
+                    self.geometry = self.geometry.intersection(geometry)
                 else:
                     self.geometry = None
+            else:
+                print "warning: geometry is invalid"
 
-    def substract_geom(self, geom):
+    def subtract_geom(self, geom):
         if self.geometry:
-            self.geometry = self.geometry.substract_geom(geom)
+            try:
+                self.geometry = self.geometry.difference(geom)
+            except TopologicalError:
+                print 'warning: couldnt subtract from geometry'
 
     def geometry_to_svg(self, svg, round):
         raise NotImplementedError('geometry_to_svg() needs to be implemented by geometry specific Feature classes')

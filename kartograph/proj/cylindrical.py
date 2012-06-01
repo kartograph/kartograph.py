@@ -33,22 +33,45 @@ class Cylindrical(Proj):
         shifts a polygon according to the origin longitude
         """
         if self.lon0 == 0.0:
-            return polygon  # no need to shift anything
+            return [polygon]  # no need to shift anything
 
-        from shapely.geometry import Polygon, MultiPolygon
+        from shapely.geometry import Polygon
         # we need to split and join some polygons
         poly_coords = []
-        for (lon, lat) in polygon.coords:
+        holes = []
+        for (lon, lat) in polygon.exterior.coords:
             poly_coords.append((lon - self.lon0, lat))
-        poly = Polygon(poly_coords)
+        for hole in polygon.interiors:
+            hole_coords = []
+            for (lon, lat) in hole.coords:
+                hole_coords.append((lon - self.lon0, lat))
+            holes.append(hole_coords)
+        poly = Polygon(poly_coords, holes)
 
         polygons = []
 
-        p_in = poly.intersection(self.bounds)
-        polygons += hasattr(p_in, 'geoms') and p_in.geoms or [p_in]
+        #print "shifted polygons", (time.time() - start)
+        #start = time.time()
 
-        p_out = poly.symmetric_difference(self.bounds)
-        out_geoms = hasattr(p_out, 'geoms') and p_out.geoms or [p_out]
+        try:
+            p_in = poly.intersection(self.bounds)
+            polygons += hasattr(p_in, 'geoms') and p_in.geoms or [p_in]
+        except:
+            pass
+
+        #print "computed polygons inside bounds", (time.time() - start)
+        #start = time.time()
+
+        try:
+            p_out = poly.symmetric_difference(self.bounds)
+            out_geoms = hasattr(p_out, 'geoms') and p_out.geoms or [p_out]
+        except:
+            out_geoms = []
+            pass
+
+        #print "computed polygons outside bounds", (time.time() - start)
+        #start = time.time()
+
         for polygon in out_geoms:
             ext_pts = []
             int_pts = []
@@ -65,7 +88,10 @@ class Cylindrical(Proj):
                 for (lon, lat) in interior.coords:
                     pts.append((lon + (-360, 360)[left], lat))
                 int_pts.append(pts)
-            polygons.append(Polygon(pts, interiors=int_pts))
+            polygons.append(Polygon(ext_pts, int_pts))
+
+        # print "shifted outside polygons to inside", (time.time() - start)
+
         return polygons
 
     def _visible(self, lon, lat):
