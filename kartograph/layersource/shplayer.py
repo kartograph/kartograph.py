@@ -46,7 +46,7 @@ class ShapefileLayer(LayerSource):
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
-    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False):
+    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False):
         """
         returns a list of features matching to the attr -> value pair
         """
@@ -69,7 +69,7 @@ class ShapefileLayer(LayerSource):
 
                 shp = self.get_shape(i)
 
-                geom = shape2geometry(shp, ignore_holes=ignore_holes)
+                geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area)
 
                 #if bbox is not None and not bbox.intersects(geom.bbox()):
                 #    ignored += 1
@@ -82,9 +82,9 @@ class ShapefileLayer(LayerSource):
         return res
 
 
-def shape2geometry(shp, ignore_holes=False):
+def shape2geometry(shp, ignore_holes=False, min_area=False):
     if shp.shapeType in (5, 15):  # multi-polygon
-        geom = shape2polygon(shp, ignore_holes=ignore_holes)
+        geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area)
     elif shp.shapeType == 3:  # line
         geom = points2line(shp)
     else:
@@ -92,7 +92,7 @@ def shape2geometry(shp, ignore_holes=False):
     return geom
 
 
-def shape2polygon(shp, ignore_holes=False):
+def shape2polygon(shp, ignore_holes=False, min_area=False):
     """
     converts a shapefile polygon to geometry.MultiPolygon
     """
@@ -117,7 +117,7 @@ def shape2polygon(shp, ignore_holes=False):
     if ignore_holes:
         holes = None
     if len(exteriors) == 1:
-        poly = MultiPolygon([Polygon(exteriors[0], holes)])
+        poly = Polygon(exteriors[0], holes)
     elif len(exteriors) > 1:
         # use multipolygon, but we need to assign the holes to the right
         # exteriors
@@ -137,6 +137,13 @@ def shape2polygon(shp, ignore_holes=False):
                         used_holes.add(h)
                         my_holes.append(hole)
             polygons.append(Polygon(ext, my_holes))
+        if min_area:
+            # compute maximum area
+            max_area = 0
+            for poly in polygons:
+                max_area = max(max_area, poly.area)
+            # filter out polygons that are below min_area * max_area
+            polygons = [poly for poly in polygons if poly.area >= min_area * max_area]
         poly = MultiPolygon(polygons)
     else:
         raise KartographError('shapefile import failed - no outer polygon found')

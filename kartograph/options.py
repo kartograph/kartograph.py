@@ -44,7 +44,8 @@ def parse_proj(opts):
         if attr not in prj:
             prj[attr] = "auto"
         else:
-            prj[attr] = float(prj[attr])
+            if prj[attr] != "auto":
+                prj[attr] = float(prj[attr])
 
 
 def parse_layers(opts):

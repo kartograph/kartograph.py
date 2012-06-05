@@ -209,7 +209,11 @@ class Kartograph(object):
             boundsFilter = lambda a: True
 
         filter = lambda rec: layerFilter(rec) and boundsFilter(rec)
-        features = layer.get_features(filter=filter)
+        features = layer.get_features(filter=filter, min_area=data["min-area"])
+
+        # remove features that are too small
+        features = [feature for feature in features if feature.geometry.area > layerOpts['filter-islands']]
+
         return features
 
     def _get_view(self, opts, bbox):
