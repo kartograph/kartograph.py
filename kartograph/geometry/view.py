@@ -22,15 +22,24 @@ class View(object):
         s = self.scale
         h = self.height
         w = self.width
-        if isinstance(pt, Point):
-            px = pt.x
-            py = pt.y
-        else:
-            px = pt[0]
-            py = pt[1]
+        px = pt[0]
+        py = pt[1]
         x = (px - bbox.left) * s + (w - bbox.width * s) * .5
         y = (py - bbox.top) * s + (h - bbox.height * s) * .5
         return ((x, y), Point(x, y))[isinstance(pt, Point)]
+
+    def project_inverse(self, pt):
+        bbox = self.bbox
+        if not bbox:
+            return pt
+        s = self.scale
+        h = self.height
+        w = self.width
+        x = pt[0]
+        y = pt[1]
+        px = (x - (w - bbox.width * s) * .5) / s + bbox.left
+        py = (y - (h - bbox.height * s) * .5) / s + bbox.top
+        return ((px, py), Point(px, py))[isinstance(pt, Point)]
 
     def project_geometry(self, geometry):
         """ converts the given geometry to the view coordinates """
