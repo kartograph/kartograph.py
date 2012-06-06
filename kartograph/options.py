@@ -225,6 +225,9 @@ def parse_bounds(opts):
     mode = bounds['mode']
     data = bounds['data']
 
+    if 'crop' not in bounds:
+        bounds['crop'] = 'auto'
+
     if "padding" not in bounds:
         bounds["padding"] = 0
 

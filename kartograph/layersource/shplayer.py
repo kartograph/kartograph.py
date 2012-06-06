@@ -2,6 +2,7 @@
 from layersource import LayerSource
 from os.path import basename
 from kartograph.errors import *
+from kartograph.geometry import BBox, create_feature
 
 
 class ShapefileLayer(LayerSource):
@@ -50,11 +51,11 @@ class ShapefileLayer(LayerSource):
         """
         returns a list of features matching to the attr -> value pair
         """
-        from kartograph.geometry import create_feature, BBox
+        print 'get_features()', attr, filter, bbox
         res = []
-        if bbox is not None:
+        if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
-            ignored = 0
+        ignored = 0
         for i in range(0, len(self.recs)):
             drec = {}
             for j in range(len(self.attributes)):
@@ -69,11 +70,10 @@ class ShapefileLayer(LayerSource):
 
                 shp = self.get_shape(i)
 
-                geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area)
-
-                #if bbox is not None and not bbox.intersects(geom.bbox()):
-                #    ignored += 1
-                #    continue  # ignore if not within bounds
+                geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area, bbox=bbox)
+                if geom is None:
+                    ignored += 1
+                    continue
 
                 feature = create_feature(geom, props)
                 res.append(feature)
@@ -82,7 +82,14 @@ class ShapefileLayer(LayerSource):
         return res
 
 
-def shape2geometry(shp, ignore_holes=False, min_area=False):
+def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False):
+    if bbox:
+        sbbox = BBox(left=shp.bbox[0], top=shp.bbox[1], width=shp.bbox[2] - shp.bbox[0], height=shp.bbox[3] - shp.bbox[1])
+        if not bbox.intersects(sbbox):
+            # ignore the shape if it's not within the bbox
+            return None
+    print "not ignored"
+
     if shp.shapeType in (5, 15):  # multi-polygon
         geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area)
     elif shp.shapeType == 3:  # line

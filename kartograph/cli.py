@@ -33,6 +33,8 @@ subparsers = parser.add_subparsers(help='sub-command help')
 parser_svg = subparsers.add_parser('svg', help='generates svg map')
 parser_svg.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
 parser_svg.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
+parser_svg.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
+parser_svg.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
 
 parser_kml = subparsers.add_parser('kml', help='generates kml map')
 parser_kml.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
@@ -78,7 +80,7 @@ def svg(args):
     cfg = parse_config(args.config)
     K = Kartograph()
     try:
-        K.generate(cfg, args.output)
+        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview)
     except Exception, e:
         import traceback, sys
         ignore_path_len = len(__file__) - 7

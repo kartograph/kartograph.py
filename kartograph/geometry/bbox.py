@@ -45,13 +45,16 @@ class BBox(object):
         return pt[0] > self.xmin and pt[0] < self.xmax and pt[1] > self.ymin and pt[1] < self.ymax
 
     def __str__(self):
-        return '[%.2f, %.2f, %.2f, %.2f]' % (self.left, self.top, self.width, self.height)
+        return 'BBox(x=%.2f, y=%.2f, w=%.2f, h=%.2f)' % (self.left, self.top, self.width, self.height)
 
     def join(self, bbox):
         self.update(Point(bbox.left, bbox.top))
         self.update(Point(bbox.right, bbox.bottom))
 
-    def inflate(self, amount):
+    def inflate(self, amount=0, inflate=False):
+        if inflate:
+            d = min(self.width, self.height)
+            amount += d * inflate
         self.xmin -= amount
         self.ymin -= amount
         self.xmax += amount

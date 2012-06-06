@@ -8,6 +8,7 @@ from shapely.geometry import Polygon, LineString, MultiPolygon
 from proj import projections
 from filter import filter_record
 from errors import *
+from copy import deepcopy
 
 
 class Kartograph(object):
@@ -18,12 +19,16 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, preview=True):
+    def generate(self, opts, outfile=None, preview=None, verbose=False):
         """
         generates svg map
         """
+        if preview is None:
+            preview = outfile is not None
+        self.__bounds_polygons_cache = None
+        opts = deepcopy(opts)
         parse_options(opts)
-        self._verbose = 'verbose' in opts and opts['verbose']
+        self._verbose = verbose
         self._prepare_layers(opts)
 
         layers = []
@@ -175,11 +180,14 @@ class Kartograph(object):
 
         if mode[:4] == "poly":
             features = self._get_bounds_polygons(opts, layerOpts)
+            ubbox = BBox()
             if len(features) > 0:
                 for feature in features:
+                    ubbox.join(geom_to_bbox(feature.geometry))
                     feature.project(proj)
                     fbbox = geom_to_bbox(feature.geometry, data["min-area"])
                     bbox.join(fbbox)
+                self.__unprojected_bounds = ubbox
             else:
                 raise KartographError('no features found for calculating the map bounds')
         bbox.inflate(bbox.width * bnds['padding'])
@@ -191,6 +199,9 @@ class Kartograph(object):
         returns a list of all polygons that the map should
         be cropped to
         """
+        if self.__bounds_polygons_cache:
+            return self.__bounds_polygons_cache
+
         features = []
         data = opts['bounds']['data']
         id = data['layer']
@@ -216,6 +227,8 @@ class Kartograph(object):
         if layerOpts['filter-islands']:
             features = [feature for feature in features if feature.geometry.area > layerOpts['filter-islands']]
 
+        self.__bounds_polygons_cache = features
+        print '_get_bounds_polygons', len(features)
         return features
 
     def _get_view(self, opts, bbox):
@@ -247,15 +260,25 @@ class Kartograph(object):
         bbox = [-180, -90, 180, 90]
         if opts['bounds']['mode'] == "bbox":
             bbox = opts['bounds']['data']
-        if 'crop' in opts['bounds']:
-            bbox = opts['bounds']['crop']
+        if 'crop' in opts['bounds'] and opts['bounds']['crop']:
+            if opts['bounds']['crop'] == "auto":
+                if self.__unprojected_bounds:
+                    bbox = self.__unprojected_bounds
+                    print bbox
+                    bbox.inflate(inflate=opts['bounds']['padding'] * 2)
+                else:
+                    print 'could not compute bounding box for auto-cropping'
+            else:
+                bbox = opts['bounds']['crop']
 
         if 'src' in layer:  # regular geodata layer
             if layer['filter'] is False:
                 filter = None
             else:
                 filter = lambda rec: filter_record(layer['filter'], rec)
+            print 'loading features from shapefile'
             features = src.get_features(filter=filter, bbox=bbox, verbose=self._verbose, ignore_holes='ignore-holes' in layer and layer['ignore-holes'])
+            print len(features)
 
         elif 'special' in layer:  # special layers need special treatment
             if layer['special'] == "graticule":
