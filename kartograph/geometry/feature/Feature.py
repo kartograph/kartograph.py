@@ -74,6 +74,8 @@ class Feature:
                 if isinstance(val, (int, float)):
                     val = str(val)
                 node.setAttribute('data-' + tgt, val)
+                if tgt == "id":
+                    node.setAttribute('id', val)
 
             elif 'where' in cfg:
                 # can be used to replace attributes...

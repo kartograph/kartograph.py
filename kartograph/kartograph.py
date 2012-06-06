@@ -59,7 +59,8 @@ class Kartograph(object):
         #_debug_show_features(layerFeatures[id], 'original')
         self._join_layers(layers, layerOpts, layerFeatures)
         #_debug_show_features(layerFeatures[id], 'joined')
-        self._crop_layers_to_view(layers, layerFeatures, view_poly)
+        if opts['export']['crop-to-view']:
+            self._crop_layers_to_view(layers, layerFeatures, view_poly)
         #_debug_show_features(layerFeatures[id], 'cropped to view')
         self._simplify_layers(layers, layerFeatures, layerOpts)
         #_debug_show_features(layerFeatures[id], 'simplified')
@@ -212,7 +213,8 @@ class Kartograph(object):
         features = layer.get_features(filter=filter, min_area=data["min-area"])
 
         # remove features that are too small
-        features = [feature for feature in features if feature.geometry.area > layerOpts['filter-islands']]
+        if layerOpts['filter-islands']:
+            features = [feature for feature in features if feature.geometry.area > layerOpts['filter-islands']]
 
         return features
 

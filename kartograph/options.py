@@ -165,7 +165,7 @@ def parse_layer_simplify(layer):
     except ValueError:
         raise Error('could not convert simplification amount to float')
     if 'filter-islands' not in layer:
-        layer['filter-islands'] = layer['simplify']['tolerance'] ** 2.0
+        layer['filter-islands'] = False
 
 
 def parse_layer_subtract(layer):
@@ -293,3 +293,5 @@ def parse_export(opts):
         exp["round"] = False
     else:
         exp["round"] = int(exp["round"])
+    if "crop-to-view" not in exp:
+        exp['crop-to-view'] = True
