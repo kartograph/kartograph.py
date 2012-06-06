@@ -9,6 +9,10 @@ from proj import projections
 from filter import filter_record
 from errors import *
 from copy import deepcopy
+from renderer import SvgRenderer
+
+
+_verbose = False
 
 
 class Kartograph(object):
@@ -25,469 +29,25 @@ class Kartograph(object):
         """
         if preview is None:
             preview = outfile is not None
-        self.__bounds_polygons_cache = None
         opts = deepcopy(opts)
         parse_options(opts)
-        self._verbose = verbose
-        self._prepare_layers(opts)
+        global _verbose
+        _verbose = verbose
 
-        layers = []
-        layerOpts = {}
+        _map = Map(opts, self.layerCache)
 
-        for layer in opts['layers']:
-            id = layer['id']
-            layerOpts[id] = layer
-            layers.append(id)
-
-        proj = self._get_projection(opts, layerOpts)
-        bounds_poly = self._get_bounds(opts, proj, layerOpts)
-
-        #_plot_geometry(bounds_poly)
-
-        bbox = geom_to_bbox(bounds_poly)
-
-        view = self._get_view(opts, bbox)
-        w = view.width
-        h = view.height
-        view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
-
-        svg = self._init_svg_canvas(opts, proj, view, bbox)
-
-        layerFeatures = {}
-
-        # get features
-        for layer in opts['layers']:
-            id = layer['id']
-            features = self._get_features(layer, proj, view, opts, view_poly)
-            layerFeatures[id] = features
-
-        #_debug_show_features(layerFeatures[id], 'original')
-        self._join_layers(layers, layerOpts, layerFeatures)
-        #_debug_show_features(layerFeatures[id], 'joined')
-        if opts['export']['crop-to-view']:
-            self._crop_layers_to_view(layers, layerFeatures, view_poly)
-        #_debug_show_features(layerFeatures[id], 'cropped to view')
-        self._simplify_layers(layers, layerFeatures, layerOpts)
-        #_debug_show_features(layerFeatures[id], 'simplified')
-        #exit()
-
-        #self.crop_layers(layers, layerOpts, layerFeatures)
-        self._subtract_layers(layers, layerOpts, layerFeatures)
-
-        self._store_layers_svg(layers, layerOpts, layerFeatures, svg, opts)
+        renderer = SvgRenderer(_map)
+        renderer.render()
 
         if outfile is None:
             if preview:
-                svg.preview()
+                renderer.preview()
             else:
-                return svg.tostring()
+                return renderer
         else:
             if preview:
-                svg.preview()
-            svg.save(outfile)
-
-    def _prepare_layers(self, opts):
-        """
-        prepares layer sources
-        """
-        self.layers = layers = {}
-
-        for layer in opts['layers']:
-            id = layer['id']
-            while id in layers:
-                id += "_"
-            if id != layer['id']:
-                layer['id'] = id  # rename layer
-            src = handle_layer_source(layer, self.layerCache)
-            layers[id] = src
-
-    def _get_projection(self, opts, layerOpts):
-        """
-        instantiates the map projection
-        """
-        map_center = self._get_map_center(opts, layerOpts)
-        projC = projections[opts['proj']['id']]
-        p_opts = {}
-        for prop in opts['proj']:
-            if prop != "id":
-                p_opts[prop] = opts['proj'][prop]
-            if prop == "lon0" and p_opts[prop] == "auto":
-                p_opts[prop] = map_center[0]
-            elif prop == "lat0" and p_opts[prop] == "auto":
-                p_opts[prop] = map_center[1]
-        proj = projC(**p_opts)
-        return proj
-
-    def _get_map_center(self, opts, layerOpts):
-        """
-        depends on the bounds config
-        """
-        mode = opts['bounds']['mode']
-        data = opts['bounds']['data']
-
-        lon0 = 0
-
-        if mode == 'bbox':
-            lon0 = data[0] + 0.5 * (data[2] - data[0])
-            lat0 = data[1] + 0.5 * (data[3] - data[1])
-
-        elif mode[:5] == 'point':
-            lon0 = 0
-            lat0 = 0
-            m = 1 / len(data)
-            for (lon, lat) in data:
-                lon0 += m * lon
-                lat0 += m * lat
-
-        elif mode[:4] == 'poly':
-            features = self._get_bounds_polygons(opts, layerOpts)
-            if len(features) > 0:
-                if isinstance(features[0].geom, BaseGeometry):
-                    (lon0, lat0) = features[0].geom.representative_point().coords[0]
-            else:
-                lon0 = 0
-                lat0 = 0
-        else:
-            print "unrecognized bound mode", mode
-        return (lon0, lat0)
-
-    def _get_bounds(self, opts, proj, layerOpts):
-        """
-        computes the (x,y) bounding box for the map,
-        given a specific projection
-        """
-        from geometry.utils import bbox_to_polygon, geom_to_bbox
-
-        bnds = opts['bounds']
-        mode = bnds['mode'][:]
-        data = bnds['data']
-
-        if self._verbose:
-            print 'bounds mode', mode
-
-        if mode == "bbox":  # catch special case bbox
-            sea = proj.bounding_geometry(data, projected=True)
-            sbbox = geom_to_bbox(sea)
-            sbbox.inflate(sbbox.width * bnds['padding'])
-            return bbox_to_polygon(sbbox)
-
-        bbox = BBox()
-
-        if mode[:5] == "point":
-            for lon, lat in data:
-                pt = proj.project(lon, lat)
-                bbox.update(pt)
-
-        if mode[:4] == "poly":
-            features = self._get_bounds_polygons(opts, layerOpts)
-            ubbox = BBox()
-            if len(features) > 0:
-                for feature in features:
-                    ubbox.join(geom_to_bbox(feature.geometry))
-                    feature.project(proj)
-                    fbbox = geom_to_bbox(feature.geometry, data["min-area"])
-                    bbox.join(fbbox)
-                self.__unprojected_bounds = ubbox
-            else:
-                raise KartographError('no features found for calculating the map bounds')
-        bbox.inflate(bbox.width * bnds['padding'])
-        return bbox_to_polygon(bbox)
-
-    def _get_bounds_polygons(self, opts, layerOpts):
-        """
-        for bounds mode "polygons" this helper function
-        returns a list of all polygons that the map should
-        be cropped to
-        """
-        if self.__bounds_polygons_cache:
-            return self.__bounds_polygons_cache
-
-        features = []
-        data = opts['bounds']['data']
-        id = data['layer']
-        if id not in self.layers:
-            raise KartographError('layer not found "%s"' % id)
-        layer = self.layers[id]
-        layerOpts = layerOpts[id]
-
-        if layerOpts['filter'] is False:
-            layerFilter = lambda a: True
-        else:
-            layerFilter = lambda rec: filter_record(layerOpts['filter'], rec)
-
-        if data['filter']:
-            boundsFilter = lambda rec: filter_record(data['filter'], rec)
-        else:
-            boundsFilter = lambda a: True
-
-        filter = lambda rec: layerFilter(rec) and boundsFilter(rec)
-        features = layer.get_features(filter=filter, min_area=data["min-area"])
-
-        # remove features that are too small
-        if layerOpts['filter-islands']:
-            features = [feature for feature in features if feature.geometry.area > layerOpts['filter-islands']]
-
-        self.__bounds_polygons_cache = features
-        print '_get_bounds_polygons', len(features)
-        return features
-
-    def _get_view(self, opts, bbox):
-        """
-        returns the output view
-        """
-        exp = opts["export"]
-        w = exp["width"]
-        h = exp["height"]
-        ratio = exp["ratio"]
-
-        if ratio == "auto":
-            ratio = bbox.width / float(bbox.height)
-
-        if h == "auto":
-            h = w / ratio
-        elif w == "auto":
-            w = h * ratio
-        return View(bbox, w, h - 1)
-
-    def _get_features(self, layer, proj, view, opts, view_poly):
-        """
-        returns a list of projected and filtered features of a layer
-        """
-        id = layer['id']
-        src = self.layers[id]
-        is_projected = False
-
-        bbox = [-180, -90, 180, 90]
-        if opts['bounds']['mode'] == "bbox":
-            bbox = opts['bounds']['data']
-        if 'crop' in opts['bounds'] and opts['bounds']['crop']:
-            if opts['bounds']['crop'] == "auto":
-                if self.__unprojected_bounds:
-                    bbox = self.__unprojected_bounds
-                    print bbox
-                    bbox.inflate(inflate=opts['bounds']['padding'] * 2)
-                else:
-                    print 'could not compute bounding box for auto-cropping'
-            else:
-                bbox = opts['bounds']['crop']
-
-        if 'src' in layer:  # regular geodata layer
-            if layer['filter'] is False:
-                filter = None
-            else:
-                filter = lambda rec: filter_record(layer['filter'], rec)
-            print 'loading features from shapefile'
-            features = src.get_features(filter=filter, bbox=bbox, verbose=self._verbose, ignore_holes='ignore-holes' in layer and layer['ignore-holes'])
-            print len(features)
-
-        elif 'special' in layer:  # special layers need special treatment
-            if layer['special'] == "graticule":
-                lats = layer['latitudes']
-                lons = layer['longitudes']
-                features = src.get_features(lats, lons, proj, bbox=bbox)
-
-            elif layer['special'] == "sea":
-                features = src.get_features(proj)
-                is_projected = True
-
-        for feature in features:
-            if not is_projected:
-                feature.project(proj)
-            feature.project_view(view)
-
-        # remove features that don't intersect our view polygon
-        features = [feature for feature in features if feature.geometry and feature.geometry.intersects(view_poly)]
-
-        return features
-
-    def _init_svg_canvas(self, opts, proj, view, bbox):
-        """
-        prepare a blank new svg file
-        """
-        import svg as svgdoc
-
-        w = view.width
-        h = view.height + 2
-
-        svg = svgdoc.Document(width='%dpx' % w, height='%dpx' % h, viewBox='0 0 %d %d' % (w, h), enable_background='new 0 0 %d %d' % (w, h), style='stroke-linejoin: round; stroke:#000; fill:#f6f3f0;')
-        defs = svg.node('defs', svg.root)
-        style = svg.node('style', defs, type='text/css')
-        css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
-        svg.cdata(css, style)
-        metadata = svg.node('metadata', svg.root)
-        views = svg.node('views', metadata)
-        view = svg.node('view', views, padding=str(opts['bounds']['padding']), w=w, h=h)
-
-        svg.node('proj', view, **proj.attrs())
-        bbox = svg.node('bbox', view, x=round(bbox.left, 2), y=round(bbox.top, 2), w=round(bbox.width, 2), h=round(bbox.height, 2))
-
-        ll = [-180, -90, 180, 90]
-        if opts['bounds']['mode'] == "bbox":
-            ll = opts['bounds']['data']
-        svg.node('llbbox', view, lon0=ll[0], lon1=ll[2], lat0=ll[1], lat1=ll[3])
-
-        return svg
-
-    def _simplify_layers(self, layers, layerFeatures, layerOpts):
-        """
-        performs polygon simplification
-        """
-        from simplify import create_point_store, simplify_lines
-
-        point_store = create_point_store()  # create a new empty point store
-
-        # compute topology for all layers
-        for id in layers:
-            if layerOpts[id]['simplify'] is not False:
-                for feature in layerFeatures[id]:
-                    feature.compute_topology(point_store, layerOpts[id]['unify-precision'])
-
-        # break features into lines
-        for id in layers:
-            if layerOpts[id]['simplify'] is not False:
-                for feature in layerFeatures[id]:
-                    feature.break_into_lines()
-
-        # simplify lines
-        total = 0
-        kept = 0
-        for id in layers:
-            if layerOpts[id]['simplify'] is not False:
-                for feature in layerFeatures[id]:
-                    lines = feature.break_into_lines()
-                    lines = simplify_lines(lines, layerOpts[id]['simplify']['method'], layerOpts[id]['simplify']['tolerance'])
-                    for line in lines:
-                        total += len(line)
-                        for pt in line:
-                            if not pt.deleted:
-                                kept += 1
-                    feature.restore_geometry(lines, layerOpts[id]['filter-islands'])
-        return (total, kept)
-
-    def _crop_layers_to_view(self, layers, layerFeatures, view_poly):
-        """
-        cuts the layer features to the map view
-        """
-        for id in layers:
-            #out = []
-            for feat in layerFeatures[id]:
-                if not feat.geometry.is_valid:
-                    pass
-                    #print feat.geometry
-                    #_plot_geometry(feat.geometry)
-                feat.crop_to(view_poly)
-                #if not feat.is_empty():
-                #    out.append(feat)
-            #layerFeatures[id] = out
-
-    def _crop_layers(self, layers, layerOpts, layerFeatures):
-        """
-        handles crop-to
-        """
-        for id in layers:
-            if layerOpts[id]['crop-to'] is not False:
-                cropped_features = []
-                for tocrop in layerFeatures[id]:
-                    cbbox = geom_to_bbox(tocrop.geom)
-                    crop_at_layer = layerOpts[id]['crop-to']
-                    if crop_at_layer not in layers:
-                        raise KartographError('you want to substract from layer "%s" which cannot be found' % crop_at_layer)
-                    for crop_at in layerFeatures[crop_at_layer]:
-                        if crop_at.geom.bbox().intersects(cbbox):
-                            tocrop.crop_to(crop_at.geom)
-                            cropped_features.append(tocrop)
-                layerFeatures[id] = cropped_features
-
-    def _subtract_layers(self, layers, layerOpts, layerFeatures):
-        """
-        handles subtract-from
-        """
-        for id in layers:
-            if layerOpts[id]['subtract-from'] is not False:
-                for feat in layerFeatures[id]:
-                    if feat.geom is None:
-                        continue
-                    cbbox = geom_to_bbox(feat.geom)
-                    for subid in layerOpts[id]['subtract-from']:
-                        if subid not in layers:
-                            raise KartographError('you want to subtract from layer "%s" which cannot be found' % subid)
-                        for sfeat in layerFeatures[subid]:
-                            if sfeat.geom and geom_to_bbox(sfeat.geom).intersects(cbbox):
-                                sfeat.subtract_geom(feat.geom)
-                layerFeatures[id] = []
-
-    def _join_layers(self, layers, layerOpts, layerFeatures):
-        """
-        joins features in layers
-        """
-        from geometry.utils import join_features
-
-        for id in layers:
-            if layerOpts[id]['join'] is not False:
-                unjoined = 0
-                join = layerOpts[id]['join']
-                groupBy = join['group-by']
-                groups = join['groups']
-                if not groups:
-                    # auto populate groups
-                    groups = {}
-                    for feat in layerFeatures[id]:
-                        fid = feat.props[groupBy]
-                        groups[fid] = [fid]
-
-                groupAs = join['group-as']
-                groupFeatures = {}
-                res = []
-                for feat in layerFeatures[id]:
-                    found_in_group = False
-                    for g_id in groups:
-                        if g_id not in groupFeatures:
-                            groupFeatures[g_id] = []
-                        if feat.props[groupBy] in groups[g_id] or str(feat.props[groupBy]) in groups[g_id]:
-                            groupFeatures[g_id].append(feat)
-                            found_in_group = True
-                            break
-                    if not found_in_group:
-                        unjoined += 1
-                        res.append(feat)
-                #print unjoined,'features were not joined'
-                for g_id in groups:
-                    props = {}
-                    for feat in groupFeatures[g_id]:
-                        fprops = feat.props
-                        for key in fprops:
-                            if key not in props:
-                                props[key] = fprops[key]
-                            else:
-                                if props[key] != fprops[key]:
-                                    props[key] = "---"
-
-                    if groupAs is not False:
-                        props[groupAs] = g_id
-                    if g_id in groupFeatures:
-                        res += join_features(groupFeatures[g_id], props)
-                layerFeatures[id] = res
-
-    def _store_layers_svg(self, layers, layerOpts, layerFeatures, svg, opts):
-        """
-        store features in svg
-        """
-        for id in layers:
-            if self._verbose:
-                print id
-            if len(layerFeatures[id]) == 0:
-                print "ignoring layer", id
-                continue  # ignore empty layers
-            g = svg.node('g', svg.root, id=id)
-            for feat in layerFeatures[id]:
-                node = feat.to_svg(svg, opts['export']['round'], layerOpts[id]['attributes'])
-                if node is not None:
-                    g.appendChild(node)
-                else:
-                    print "feature.to_svg is None", feat
-            if 'styles' in layerOpts[id]:
-                for prop in layerOpts[id]['styles']:
-                    g.setAttribute(prop, str(layerOpts[id]['styles'][prop]))
+                renderer.preview()
+            renderer.write_to_file(outfile)
 
     def generate_kml(self, opts, outfile=None):
         """
@@ -553,7 +113,7 @@ class Kartograph(object):
         from pykml.factory import KML_ElementMaker as KML
 
         for id in layers:
-            if self._verbose:
+            if _verbose:
                 print id
             if len(layerFeatures[id]) == 0:
                 continue  # ignore empty layers
@@ -563,6 +123,410 @@ class Kartograph(object):
             for feat in layerFeatures[id]:
                 g.append(feat.to_kml(opts['export']['round'], layerOpts[id]['attributes']))
             kml.Document.append(g)
+
+
+class Map(object):
+
+    def __init__(me, options, layerCache, verbose=False):
+        me.options = options
+        me._verbose = verbose
+        me.layers = []
+        me.layersById = {}
+        me._bounds_polygons_cache = False
+        me._unprojected_bounds = None
+
+        for layer_cfg in options['layers']:
+            layer_id = layer_cfg['id']
+            layer = MapLayer(layer_id, layer_cfg, me, layerCache)
+            me.layers.append(layer)
+            me.layersById[layer_id] = layer
+
+        me.proj = me._init_projection()
+        me.bounds_poly = me._init_bounds()
+        me.src_bbox = geom_to_bbox(me.bounds_poly)
+        me.view = me._get_view()
+
+        w = me.view.width
+        h = me.view.height
+        me.view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
+
+        # get features
+        for layer in me.layers:
+            layer.get_features()
+
+        #_debug_show_features(layerFeatures[id], 'original')
+        me._join_layers()
+        #_debug_show_features(layerFeatures[id], 'joined')
+        if options['export']['crop-to-view']:
+            me._crop_layers_to_view()
+        #_debug_show_features(layerFeatures[id], 'cropped to view')
+        me._simplify_layers()
+        #_debug_show_features(layerFeatures[id], 'simplified')
+
+        #self.crop_layers(layers, layerOpts, layerFeatures)
+        me._subtract_layers()
+
+    def _init_projection(self):
+        """
+        instantiates the map projection
+        """
+        map_center = self.__get_map_center()
+        opts = self.options
+        projC = projections[opts['proj']['id']]
+        p_opts = {}
+        for prop in opts['proj']:
+            if prop != "id":
+                p_opts[prop] = opts['proj'][prop]
+            if prop == "lon0" and p_opts[prop] == "auto":
+                p_opts[prop] = map_center[0]
+            elif prop == "lat0" and p_opts[prop] == "auto":
+                p_opts[prop] = map_center[1]
+        return projC(**p_opts)
+
+    def __get_map_center(self):
+        """
+        used by _init_projection() to determine the center of the
+        map projection, depending on the bounds config
+        """
+        opts = self.options
+        mode = opts['bounds']['mode']
+        data = opts['bounds']['data']
+
+        lon0 = 0
+
+        if mode == 'bbox':
+            lon0 = data[0] + 0.5 * (data[2] - data[0])
+            lat0 = data[1] + 0.5 * (data[3] - data[1])
+
+        elif mode[:5] == 'point':
+            lon0 = 0
+            lat0 = 0
+            m = 1 / len(data)
+            for (lon, lat) in data:
+                lon0 += m * lon
+                lat0 += m * lat
+
+        elif mode[:4] == 'poly':
+            features = self._get_bounds_polygons()
+            if len(features) > 0:
+                if isinstance(features[0].geom, BaseGeometry):
+                    (lon0, lat0) = features[0].geom.representative_point().coords[0]
+            else:
+                lon0 = 0
+                lat0 = 0
+        else:
+            print "unrecognized bound mode", mode
+        return (lon0, lat0)
+
+    def _init_bounds(self):
+        """
+        computes the (x,y) bounding box for the map,
+        given a specific projection
+        """
+        from geometry.utils import bbox_to_polygon, geom_to_bbox
+
+        opts = self.options
+        proj = self.proj
+        bnds = opts['bounds']
+        mode = bnds['mode'][:]
+        data = bnds['data']
+
+        if _verbose:
+            print 'using bounds mode', mode
+
+        if mode == "bbox":  # catch special case bbox
+            sea = proj.bounding_geometry(data, projected=True)
+            sbbox = geom_to_bbox(sea)
+            sbbox.inflate(sbbox.width * bnds['padding'])
+            return bbox_to_polygon(sbbox)
+
+        bbox = BBox()
+
+        if mode[:5] == "point":
+            for lon, lat in data:
+                pt = proj.project(lon, lat)
+                bbox.update(pt)
+
+        if mode[:4] == "poly":
+            features = self._get_bounds_polygons()
+            ubbox = BBox()
+            if len(features) > 0:
+                for feature in features:
+                    ubbox.join(geom_to_bbox(feature.geometry))
+                    feature.project(proj)
+                    fbbox = geom_to_bbox(feature.geometry, data["min-area"])
+                    bbox.join(fbbox)
+                self._unprojected_bounds = ubbox
+            else:
+                raise KartographError('no features found for calculating the map bounds')
+        bbox.inflate(bbox.width * bnds['padding'])
+        return bbox_to_polygon(bbox)
+
+    def _get_bounds_polygons(self):
+        """
+        for bounds mode "polygons" this helper function
+        returns a list of all polygons that the map should
+        be cropped to
+        """
+        if self._bounds_polygons_cache:
+            return self._bounds_polygons_cache
+        opts = self.options
+        features = []
+        data = opts['bounds']['data']
+        id = data['layer']
+
+        if id not in self.layersById:
+            raise KartographError('layer not found "%s"' % id)
+        layer = self.layersById[id]
+
+        if layer.options['filter'] is False:
+            layerFilter = lambda a: True
+        else:
+            layerFilter = lambda rec: filter_record(layer.options['filter'], rec)
+
+        if data['filter']:
+            boundsFilter = lambda rec: filter_record(data['filter'], rec)
+        else:
+            boundsFilter = lambda a: True
+
+        filter = lambda rec: layerFilter(rec) and boundsFilter(rec)
+        features = layer.source.get_features(filter=filter, min_area=data["min-area"])
+
+        # remove features that are too small
+        if layer.options['filter-islands']:
+            features = [feature for feature in features if feature.geometry.area > layer.options['filter-islands']]
+
+        self._bounds_polygons_cache = features
+        return features
+
+    def _get_view(self):
+        """
+        returns the output view
+        """
+        opts = self.options
+        bbox = self.src_bbox
+        exp = opts["export"]
+        w = exp["width"]
+        h = exp["height"]
+        ratio = exp["ratio"]
+
+        if ratio == "auto":
+            ratio = bbox.width / float(bbox.height)
+
+        if h == "auto":
+            h = w / ratio
+        elif w == "auto":
+            w = h * ratio
+        return View(bbox, w, h - 1)
+
+    def _simplify_layers(self):
+        """
+        performs polygon simplification
+        """
+        from simplify import create_point_store, simplify_lines
+
+        point_store = create_point_store()  # create a new empty point store
+
+        # compute topology for all layers
+        for layer in self.layers:
+            if layer.options['simplify'] is not False:
+                for feature in layer.features:
+                    feature.compute_topology(point_store, layer.options['unify-precision'])
+
+        # break features into lines
+        for layer in self.layers:
+            if layer.options['simplify'] is not False:
+                for feature in layer.features:
+                    feature.break_into_lines()
+
+        # simplify lines
+        total = 0
+        kept = 0
+        for layer in self.layers:
+            if layer.options['simplify'] is not False:
+                for feature in layer.features:
+                    lines = feature.break_into_lines()
+                    lines = simplify_lines(lines, layer.options['simplify']['method'], layer.options['simplify']['tolerance'])
+                    for line in lines:
+                        total += len(line)
+                        for pt in line:
+                            if not pt.deleted:
+                                kept += 1
+                    feature.restore_geometry(lines, layer.options['filter-islands'])
+        return (total, kept)
+
+    def _crop_layers_to_view(self):
+        """
+        cuts the layer features to the map view
+        """
+        for layer in self.layers:
+            #out = []
+            for feat in layer.features:
+                if not feat.geometry.is_valid:
+                    pass
+                    #print feat.geometry
+                    #_plot_geometry(feat.geometry)
+                feat.crop_to(self.view_poly)
+                #if not feat.is_empty():
+                #    out.append(feat)
+            #layer.features = out
+
+    def _crop_layers(self):
+        """
+        handles crop-to
+        """
+        for layer in layers:
+            if layer.options['crop-to'] is not False:
+                cropped_features = []
+                for tocrop in layer.features:
+                    cbbox = geom_to_bbox(tocrop.geom)
+                    crop_at_layer = layer.options['crop-to']
+                    if crop_at_layer not in layers:
+                        raise KartographError('you want to substract from layer "%s" which cannot be found' % crop_at_layer)
+                    for crop_at in layerFeatures[crop_at_layer]:
+                        if crop_at.geom.bbox().intersects(cbbox):
+                            tocrop.crop_to(crop_at.geom)
+                            cropped_features.append(tocrop)
+                layer.features = cropped_features
+
+    def _subtract_layers(self):
+        """
+        handles subtract-from
+        """
+        for layer in self.layers:
+            if layer.options['subtract-from'] is not False:
+                for feat in layer.features:
+                    if feat.geom is None:
+                        continue
+                    cbbox = geom_to_bbox(feat.geom)
+                    for subid in layer.options['subtract-from']:
+                        if subid not in layers:
+                            raise KartographError('you want to subtract from layer "%s" which cannot be found' % subid)
+                        for sfeat in layerFeatures[subid]:
+                            if sfeat.geom and geom_to_bbox(sfeat.geom).intersects(cbbox):
+                                sfeat.subtract_geom(feat.geom)
+                layer.features = []
+
+    def _join_layers(self):
+        """
+        joins features in layers
+        """
+        from geometry.utils import join_features
+
+        for layer in self.layers:
+            if layer.options['join'] is not False:
+                unjoined = 0
+                join = layer.options['join']
+                groupBy = join['group-by']
+                groups = join['groups']
+                if not groups:
+                    # auto populate groups
+                    groups = {}
+                    for feat in layer.features:
+                        fid = feat.props[groupBy]
+                        groups[fid] = [fid]
+
+                groupAs = join['group-as']
+                groupFeatures = {}
+                res = []
+                for feat in layer.features:
+                    found_in_group = False
+                    for g_id in groups:
+                        if g_id not in groupFeatures:
+                            groupFeatures[g_id] = []
+                        if feat.props[groupBy] in groups[g_id] or str(feat.props[groupBy]) in groups[g_id]:
+                            groupFeatures[g_id].append(feat)
+                            found_in_group = True
+                            break
+                    if not found_in_group:
+                        unjoined += 1
+                        res.append(feat)
+                #print unjoined,'features were not joined'
+                for g_id in groups:
+                    props = {}
+                    for feat in groupFeatures[g_id]:
+                        fprops = feat.props
+                        for key in fprops:
+                            if key not in props:
+                                props[key] = fprops[key]
+                            else:
+                                if props[key] != fprops[key]:
+                                    props[key] = "---"
+
+                    if groupAs is not False:
+                        props[groupAs] = g_id
+                    if g_id in groupFeatures:
+                        res += join_features(groupFeatures[g_id], props)
+                layer.features = res
+
+
+class MapLayer(object):
+
+    def __init__(self, id, options, _map, cache):
+        self.id = id
+        self.options = options
+        self.map = _map
+        self.cache = cache
+        self._prepare_layer()
+
+    def _prepare_layer(self):
+        """
+        prepares layer sources
+        """
+        while self.id in self.map.layersById:
+            self.id += "_"  # make layer id unique
+        self.source = handle_layer_source(self.options, self.cache)
+
+    def get_features(layer, filter=False, min_area=0):
+        """
+        returns a list of projected and filtered features of a layer
+        """
+        opts = layer.map.options
+        #id = layer['id']
+        #src = self.layers[id]
+        is_projected = False
+
+        bbox = [-180, -90, 180, 90]
+        if opts['bounds']['mode'] == "bbox":
+            bbox = opts['bounds']['data']
+        if 'crop' in opts['bounds'] and opts['bounds']['crop']:
+            if opts['bounds']['crop'] == "auto":
+                if layer.map._unprojected_bounds:
+                    bbox = layer.map._unprojected_bounds
+                    bbox.inflate(inflate=opts['bounds']['padding'] * 2)
+                else:
+                    print 'could not compute bounding box for auto-cropping'
+            else:
+                bbox = opts['bounds']['crop']
+
+        if 'src' in layer.options:  # regular geodata layer
+            if layer.options['filter'] is False:
+                filter = None
+            else:
+                filter = lambda rec: filter_record(layer.options['filter'], rec)
+
+            features = layer.source.get_features(filter=filter, bbox=bbox, ignore_holes='ignore-holes' in layer.options and layer.options['ignore-holes'])
+            if _verbose:
+                print 'loaded %d features from shapefile %s' % (len(features), layer.options['src'])
+
+        elif 'special' in layer.options:  # special layers need special treatment
+            if layer.options['special'] == "graticule":
+                lats = layer.options['latitudes']
+                lons = layer.options['longitudes']
+                features = layer.source.get_features(lats, lons, self.map.proj, bbox=bbox)
+
+            elif layer.options['special'] == "sea":
+                features = layer.source.get_features(self.map.proj)
+                is_projected = True
+
+        for feature in features:
+            if not is_projected:
+                feature.project(layer.map.proj)
+            feature.project_view(layer.map.view)
+
+        # remove features that don't intersect our view polygon
+        features = [feature for feature in features if feature.geometry and feature.geometry.intersects(layer.map.view_poly)]
+        layer.features = features
 
 
 def _plot_geometry(geom, fill='#ffcccc', stroke='#333333', alpha=1, msg=None):

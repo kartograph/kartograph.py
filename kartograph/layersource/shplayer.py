@@ -51,7 +51,6 @@ class ShapefileLayer(LayerSource):
         """
         returns a list of features matching to the attr -> value pair
         """
-        print 'get_features()', attr, filter, bbox
         res = []
         if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
@@ -78,7 +77,7 @@ class ShapefileLayer(LayerSource):
                 feature = create_feature(geom, props)
                 res.append(feature)
         if bbox is not None and ignored > 0 and verbose:
-            print "[%s] ignored %d shapes (not in bounds)" % (basename(self.shpSrc), ignored)
+            print "-ignoring %d shapes (not in bounds %s )" % (ignored, bbox)
         return res
 
 
@@ -88,7 +87,6 @@ def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False):
         if not bbox.intersects(sbbox):
             # ignore the shape if it's not within the bbox
             return None
-    print "not ignored"
 
     if shp.shapeType in (5, 15):  # multi-polygon
         geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area)
