@@ -8,7 +8,7 @@ class MapRenderer(object):
     def render(self):
         pass
 
-    def write_to_file(self, filename):
+    def write(self, filename):
         raise 'Not implemented yet'
 
     def preview(self):
@@ -16,5 +16,6 @@ class MapRenderer(object):
 
 
 from svg import SvgRenderer
+from kml import KmlRenderer
 
-__all__ = ['MapRenderer', 'SvgRenderer']
+__all__ = ['MapRenderer', 'SvgRenderer', 'KmlRenderer']

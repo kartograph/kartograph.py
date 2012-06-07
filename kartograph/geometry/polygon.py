@@ -3,6 +3,8 @@ from geometry import *
 from bbox import BBox
 import utils
 
+# DEPRECATED! we use shapely.geometry.MultiPolygon instead
+
 
 class MultiPolygon(SolidGeometry):
 

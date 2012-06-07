@@ -9,10 +9,15 @@ from proj import projections
 from filter import filter_record
 from errors import *
 from copy import deepcopy
-from renderer import SvgRenderer
+from renderer import SvgRenderer, KmlRenderer
 
 
 _verbose = False
+
+_known_renderer = {
+    'svg': SvgRenderer,
+    'kml': KmlRenderer
+}
 
 
 class Kartograph(object):
@@ -23,113 +28,44 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, preview=None, verbose=False):
+    def generate(self, opts, outfile=None, format='svg', preview=None, verbose=False):
         """
         generates svg map
         """
         if preview is None:
             preview = outfile is not None
+
         opts = deepcopy(opts)
         parse_options(opts)
+
         global _verbose
         _verbose = verbose
 
-        _map = Map(opts, self.layerCache)
+        _map = Map(opts, self.layerCache, format=format)
 
-        renderer = SvgRenderer(_map)
-        renderer.render()
-
-        if outfile is None:
-            if preview:
-                renderer.preview()
+        format = format.lower()
+        if format in _known_renderer:
+            renderer = _known_renderer[format](_map)
+            renderer.render()
+            if outfile is None:
+                if preview:
+                    renderer.preview()
+                else:
+                    return renderer
             else:
-                return renderer
+                if preview:
+                    renderer.preview()
+                renderer.write_to_file(outfile)
         else:
-            if preview:
-                renderer.preview()
-            renderer.write_to_file(outfile)
-
-    def generate_kml(self, opts, outfile=None):
-        """
-        generates KML file
-        """
-        parse_options(opts)
-        self.prepare_layers(opts)
-
-        #proj = self.get_projection(opts)
-        #bounds_poly = self.get_bounds(opts,proj)
-        #bbox = bounds_poly.bbox()
-
-        proj = projections['ll']()
-        view = View()
-
-        #view = self.get_view(opts, bbox)
-        #w = view.width
-        #h = view.height
-        #view_poly = MultiPolygon([[(0,0),(0,h),(w,h),(w,0)]])
-        # view_poly = bounds_poly.project_view(view)
-        view_poly = None
-
-        kml = self.init_kml_canvas()
-
-        layers = []
-        layerOpts = {}
-        layerFeatures = {}
-
-        # get features
-        for layer in opts['layers']:
-            id = layer['id']
-            layerOpts[id] = layer
-            layers.append(id)
-            features = self.get_features(layer, proj, view, opts, view_poly)
-            layerFeatures[id] = features
-
-        self.simplify_layers(layers, layerFeatures, layerOpts)
-        # self.crop_layers_to_view(layers, layerFeatures, view_poly)
-        self.crop_layers(layers, layerOpts, layerFeatures)
-        self.join_layers(layers, layerOpts, layerFeatures)
-        self.substract_layers(layers, layerOpts, layerFeatures)
-        self.store_layers_kml(layers, layerOpts, layerFeatures, kml, opts)
-
-        if outfile is None:
-            outfile = open('tmp.kml', 'w')
-
-        from lxml import etree
-        outfile.write(etree.tostring(kml, pretty_print=True))
-
-    def _init_kml_canvas(self):
-        from pykml.factory import KML_ElementMaker as KML
-        kml = KML.kml(
-            KML.Document(
-                KML.name('kartograph map')
-            )
-        )
-        return kml
-
-    def _store_layers_kml(self, layers, layerOpts, layerFeatures, kml, opts):
-        """
-        store features in kml (projected to WGS84 latlon)
-        """
-        from pykml.factory import KML_ElementMaker as KML
-
-        for id in layers:
-            if _verbose:
-                print id
-            if len(layerFeatures[id]) == 0:
-                continue  # ignore empty layers
-            g = KML.Folder(
-                KML.name(id)
-            )
-            for feat in layerFeatures[id]:
-                g.append(feat.to_kml(opts['export']['round'], layerOpts[id]['attributes']))
-            kml.Document.append(g)
+            raise KartographError('unknown format: %s' % format)
 
 
 class Map(object):
 
-    def __init__(me, options, layerCache, verbose=False):
+    def __init__(me, options, layerCache, verbose=False, format='svg'):
         me.options = options
         me._verbose = verbose
+        me.format = format
         me.layers = []
         me.layersById = {}
         me._bounds_polygons_cache = False
@@ -143,12 +79,8 @@ class Map(object):
 
         me.proj = me._init_projection()
         me.bounds_poly = me._init_bounds()
-        me.src_bbox = geom_to_bbox(me.bounds_poly)
         me.view = me._get_view()
-
-        w = me.view.width
-        h = me.view.height
-        me.view_poly = Polygon([(0, 0), (0, h), (w, h), (w, 0)])
+        me.view_poly = me._init_view_poly()
 
         # get features
         for layer in me.layers:
@@ -157,12 +89,11 @@ class Map(object):
         #_debug_show_features(layerFeatures[id], 'original')
         me._join_layers()
         #_debug_show_features(layerFeatures[id], 'joined')
-        if options['export']['crop-to-view']:
+        if options['export']['crop-to-view'] and format != 'kml':
             me._crop_layers_to_view()
         #_debug_show_features(layerFeatures[id], 'cropped to view')
         me._simplify_layers()
         #_debug_show_features(layerFeatures[id], 'simplified')
-
         #self.crop_layers(layers, layerOpts, layerFeatures)
         me._subtract_layers()
 
@@ -170,6 +101,9 @@ class Map(object):
         """
         instantiates the map projection
         """
+        if self.format in ('kml', 'json'):
+            return projections['ll']()  # use no projection for KML
+
         map_center = self.__get_map_center()
         opts = self.options
         projC = projections[opts['proj']['id']]
@@ -223,6 +157,9 @@ class Map(object):
         computes the (x,y) bounding box for the map,
         given a specific projection
         """
+        if self.format in ('kml', 'json'):
+            return None  # no bounds needed for KML
+
         from geometry.utils import bbox_to_polygon, geom_to_bbox
 
         opts = self.options
@@ -270,6 +207,7 @@ class Map(object):
         """
         if self._bounds_polygons_cache:
             return self._bounds_polygons_cache
+
         opts = self.options
         features = []
         data = opts['bounds']['data']
@@ -303,8 +241,11 @@ class Map(object):
         """
         returns the output view
         """
+        if self.format in ('kml', 'json'):
+            return View()  # no view transformation needed for KML
+
+        self.src_bbox = bbox = geom_to_bbox(self.bounds_poly)
         opts = self.options
-        bbox = self.src_bbox
         exp = opts["export"]
         w = exp["width"]
         h = exp["height"]
@@ -318,6 +259,17 @@ class Map(object):
         elif w == "auto":
             w = h * ratio
         return View(bbox, w, h - 1)
+
+    def _init_view_poly(self):
+        """
+        creates a polygon that represents the rectangular view bounds
+        used for cropping the geometries to not overlap the view
+        """
+        if self.format in ('kml', 'json'):
+            return None  # no view polygon needed for KML
+        w = self.view.width
+        h = self.view.height
+        return Polygon([(0, 0), (0, h), (w, h), (w, 0)])
 
     def _simplify_layers(self):
         """
@@ -482,8 +434,6 @@ class MapLayer(object):
         returns a list of projected and filtered features of a layer
         """
         opts = layer.map.options
-        #id = layer['id']
-        #src = self.layers[id]
         is_projected = False
 
         bbox = [-180, -90, 180, 90]
@@ -525,7 +475,8 @@ class MapLayer(object):
             feature.project_view(layer.map.view)
 
         # remove features that don't intersect our view polygon
-        features = [feature for feature in features if feature.geometry and feature.geometry.intersects(layer.map.view_poly)]
+        if layer.map.view_poly:
+            features = [feature for feature in features if feature.geometry and feature.geometry.intersects(layer.map.view_poly)]
         layer.features = features
 
 

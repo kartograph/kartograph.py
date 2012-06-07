@@ -26,33 +26,21 @@ class bcolors:
         self.ENDC = ''
 
 parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles')
-#parser.add_argument('command', type=str, choices=['svg', 'kml', 'generate'], help='specifies what kartograph is supposed to do')
 
-subparsers = parser.add_subparsers(help='sub-command help')
+#subparsers = parser.add_subparsers(help='sub-command help')
 
-parser_svg = subparsers.add_parser('svg', help='generates svg map')
-parser_svg.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
-parser_svg.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
-parser_svg.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
-parser_svg.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
-
-parser_kml = subparsers.add_parser('kml', help='generates kml map')
-parser_kml.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
-parser_kml.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
-
-parser_cartogram = subparsers.add_parser('cartogram', help='cartogram tool')
-parser_cartogram.add_argument('map', type=argparse.FileType('r'), help='the map svg the cartogram should be added to')
-parser_cartogram.add_argument('layer', type=str, help='id of the layer the cartogram should be generated from')
-parser_cartogram.add_argument('attr', type=str, help='the attribute that identifies the map features')
-parser_cartogram.add_argument('data', type=argparse.FileType('r'), help='csv file')
-parser_cartogram.add_argument('key', type=str, help='the column that contains the keys to identify features')
-parser_cartogram.add_argument('val', type=str, help='the column that contains the values for each feature')
+#parser_svg = subparsers.add_parser('svg', help='generates svg map')
+parser.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
+parser.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
+parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
+parser.add_argument('--format', '-f', metavar='svg|kml', help='output format, if not specified it will be guessed from output filename or default to svg')
+parser.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
 
 
 from kartograph import Kartograph
-from cartogram import Cartogram
 import time
 import sys
+import os
 
 
 def parse_config(f):
@@ -76,13 +64,22 @@ def parse_config(f):
         raise KartographError('supported config formats are .json and .yaml')
 
 
-def svg(args):
+def render_map(args):
     cfg = parse_config(args.config)
     K = Kartograph()
+    if args.format:
+        format = args.format
+    elif args.output:
+        format = os.path.splitext(args.output)[1]
+    else:
+        format = 'svg'
     try:
-        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview)
+
+        # generate the map
+        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview, format=format)
+
     except Exception, e:
-        import traceback, sys
+        import traceback
         ignore_path_len = len(__file__) - 7
         exc = sys.exc_info()
         for (filename, line, func, code) in traceback.extract_tb(exc[2]):
@@ -94,25 +91,7 @@ def svg(args):
         print e
         exit(-1)
 
-
-def kml(args):
-    cfg = parse_config(args.config)
-    K = Kartograph()
-    try:
-        K.generate_kml(cfg, args.config)
-    except KartographError, e:
-        print e
-        exit(-1)
-
-
-def cartogram(args):
-    C = Cartogram()
-    C.generate(args.map, args.attr, args.data, args.key, args.val)
-
-
-parser_svg.set_defaults(func=svg)
-parser_kml.set_defaults(func=kml)
-parser_cartogram.set_defaults(func=cartogram)
+parser.set_defaults(func=render_map)
 
 
 def main():

@@ -143,6 +143,9 @@ class SvgRenderer(MapRenderer):
         path = self.svg.node('path', d=path_str)
         return path
 
+    def write(self, filename):
+        self.svg.write(filename)
+
     def preview(self):
         self.svg.preview()
 
@@ -179,11 +182,11 @@ class SvgDocument(object):
         return cd
 
     def preview(self):
-        self.save('tmp.svg')
+        self.write('tmp.svg')
         from subprocess import call
         call(["firefox", "tmp.svg"])
 
-    def save(self, outfile):
+    def write(self, outfile):
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
         outfile.write(self.doc.toxml())
