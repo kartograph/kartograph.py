@@ -70,7 +70,7 @@ def render_map(args):
     if args.format:
         format = args.format
     elif args.output:
-        format = os.path.splitext(args.output)[1]
+        format = os.path.splitext(args.output.name)[1][1:]
     else:
         format = 'svg'
     try:

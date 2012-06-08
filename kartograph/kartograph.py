@@ -55,7 +55,7 @@ class Kartograph(object):
             else:
                 if preview:
                     renderer.preview()
-                renderer.write_to_file(outfile)
+                renderer.write(outfile)
         else:
             raise KartographError('unknown format: %s' % format)
 

@@ -185,7 +185,6 @@ class SvgDocument(object):
     def write(self, outfile, src_encoding=None):
         if src_encoding is None:
             src_encoding = 'latin-1'
-        print 'decoding from ' + src_encoding
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
         raw = self.doc.toxml()
