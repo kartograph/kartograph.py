@@ -28,7 +28,7 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, format='svg', preview=None, verbose=False):
+    def generate(self, opts, outfile=None, format='svg', preview=None, verbose=False, src_encoding=None):
         """
         generates svg map
         """
@@ -45,7 +45,7 @@ class Kartograph(object):
 
         format = format.lower()
         if format in _known_renderer:
-            renderer = _known_renderer[format](_map)
+            renderer = _known_renderer[format](_map, src_encoding=src_encoding)
             renderer.render()
             if outfile is None:
                 if preview:
