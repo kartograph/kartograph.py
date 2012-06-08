@@ -1,6 +1,5 @@
 
 from layersource import LayerSource
-from os.path import basename
 from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
 
@@ -47,11 +46,13 @@ class ShapefileLayer(LayerSource):
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
-    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False):
+    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False, charset='utf-8'):
         """
         returns a list of features matching to the attr -> value pair
         """
         res = []
+        try_encodings = ('utf-8', 'latin-1', 'iso-8859-2')
+        tried_encodings = [charset]
         if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
         ignored = 0
@@ -63,6 +64,24 @@ class ShapefileLayer(LayerSource):
                 props = {}
                 for j in range(len(self.attributes)):
                     val = self.recs[i][j]
+                    if isinstance(val, str):
+                        try:
+                            val = val.decode(charset)
+                        except:
+                            print 'warning: could not decode "%s" to %s' % (val, charset)
+                            next_guess = False
+                            for enc in try_encodings:
+                                if enc not in tried_encodings:
+                                    next_guess = enc
+                                    tried_encodings.append(enc)
+                                    break
+                            if next_guess:
+                                print 'trying %s now..' % next_guess
+                                charset = next_guess
+                                j -= 1
+                                continue
+                            else:
+                                raise KartographError('having problems to decode the input data "%s"' % val)
                     if isinstance(val, (str, unicode)):
                         val = val.strip()
                     props[self.attributes[j]] = val

@@ -28,7 +28,7 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, format='svg', preview=None, verbose=False, src_encoding=None):
+    def generate(self, opts, outfile=None, format='svg', preview=None, verbose=False):
         """
         generates svg map
         """
@@ -45,7 +45,7 @@ class Kartograph(object):
 
         format = format.lower()
         if format in _known_renderer:
-            renderer = _known_renderer[format](_map, src_encoding=src_encoding)
+            renderer = _known_renderer[format](_map)
             renderer.render()
             if outfile is None:
                 if preview:
@@ -62,7 +62,7 @@ class Kartograph(object):
 
 class Map(object):
 
-    def __init__(me, options, layerCache, verbose=False, format='svg'):
+    def __init__(me, options, layerCache, verbose=False, format='svg', src_encoding=None):
         me.options = options
         me._verbose = verbose
         me.format = format
@@ -70,6 +70,9 @@ class Map(object):
         me.layersById = {}
         me._bounds_polygons_cache = False
         me._unprojected_bounds = None
+        if not src_encoding:
+            src_encoding = 'utf-8'
+        me._source_encoding = src_encoding
 
         for layer_cfg in options['layers']:
             layer_id = layer_cfg['id']
@@ -228,7 +231,7 @@ class Map(object):
             boundsFilter = lambda a: True
 
         filter = lambda rec: layerFilter(rec) and boundsFilter(rec)
-        features = layer.source.get_features(filter=filter, min_area=data["min-area"])
+        features = layer.source.get_features(filter=filter, min_area=data["min-area"], charset=layer.options['charset'])
 
         # remove features that are too small
         if layer.options['filter-islands']:
@@ -455,7 +458,12 @@ class MapLayer(object):
             else:
                 filter = lambda rec: filter_record(layer.options['filter'], rec)
 
-            features = layer.source.get_features(filter=filter, bbox=bbox, ignore_holes='ignore-holes' in layer.options and layer.options['ignore-holes'])
+            features = layer.source.get_features(
+                filter=filter,
+                bbox=bbox,
+                ignore_holes='ignore-holes' in layer.options and layer.options['ignore-holes'],
+                charset=layer.options['charset']
+            )
             if _verbose:
                 print 'loaded %d features from shapefile %s' % (len(features), layer.options['src'])
 

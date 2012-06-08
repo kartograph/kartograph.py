@@ -140,10 +140,10 @@ class SvgRenderer(MapRenderer):
         return path
 
     def write(self, filename):
-        self.svg.write(filename, src_encoding=self.src_encoding)
+        self.svg.write(filename)
 
     def preview(self):
-        self.svg.preview(src_encoding=self.src_encoding)
+        self.svg.preview()
 
 
 from xml.dom import minidom
@@ -177,25 +177,15 @@ class SvgDocument(object):
             parent.appendChild(cd)
         return cd
 
-    def preview(self, src_encoding=None):
-        self.write('tmp.svg', src_encoding=src_encoding)
+    def preview(self):
+        self.write('tmp.svg')
         from subprocess import call
         call(["firefox", "tmp.svg"])
 
-    def write(self, outfile, src_encoding=None):
-        if src_encoding is None:
-            src_encoding = 'latin-1'
+    def write(self, outfile):
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
         raw = self.doc.toxml()
-        try:
-            raw = raw.decode(src_encoding)
-        except:
-            print 'warning: could not decode from', src_encoding
-            print 'brute force normalizing non-ascii characters'
-            import unicodedata
-            raw = unicode(raw, errors='ignore')
-            raw = unicodedata.normalize('NFKD', raw).encode('ascii', 'ignore')
         try:
             raw = raw.encode('utf-8')
         except:

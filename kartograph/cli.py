@@ -35,7 +35,6 @@ parser.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'
 parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
 parser.add_argument('--format', '-f', metavar='svg|kml', help='output format, if not specified it will be guessed from output filename or default to svg')
 parser.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
-parser.add_argument('--encoding', metavar='charset', help='charset of the source geodata (defaults to latin-1)', default='latin-1')
 
 from kartograph import Kartograph
 import time
@@ -76,7 +75,7 @@ def render_map(args):
     try:
 
         # generate the map
-        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview, format=format, src_encoding=args.encoding)
+        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview, format=format)
 
     except Exception, e:
         import traceback

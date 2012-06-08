@@ -2,9 +2,8 @@
 
 class MapRenderer(object):
 
-    def __init__(self, map, src_encoding=None):
+    def __init__(self, map):
         self.map = map
-        self.src_encoding = src_encoding
 
     def render(self):
         pass

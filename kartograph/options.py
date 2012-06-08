@@ -65,6 +65,8 @@ def parse_layers(opts):
             if 'id' not in layer:
                 layer['id'] = 'layer_' + str(l_id)
                 l_id += 1
+            if 'charset' not in layer:
+                layer['charset'] = 'utf-8'
         elif 'special' in layer:
             if layer['special'] == 'graticule':
                 if 'id' not in layer:
