@@ -57,7 +57,7 @@ class SvgRenderer(MapRenderer):
             if len(layer.features) == 0:
                 print "ignoring empty layer", layer.id
                 continue  # ignore empty layers
-            g = svg.node('g', svg.root, id=id)
+            g = svg.node('g', svg.root, id=layer.id)
             for feat in layer.features:
                 node = self._render_feature(feat, layer.options['attributes'])
                 if node is not None:
