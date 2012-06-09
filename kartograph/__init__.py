@@ -1,5 +1,5 @@
 
 from kartograph import Kartograph
-from kartograph import projections
+from map import projections
 
 __all__ = ['Kartograph', 'projections']

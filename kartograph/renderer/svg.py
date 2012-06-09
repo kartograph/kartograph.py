@@ -1,6 +1,14 @@
 
 from kartograph.renderer import MapRenderer
 from kartograph.errors import KartographError
+
+# This script contains everything that is needed by Kartograph to finally
+# render the processed maps into SVG files.
+#
+
+# The SVG renderer is based on xml.dom.minidom.
+from xml.dom import minidom
+from xml.dom.minidom import parse
 import re
 
 
@@ -8,15 +16,20 @@ class SvgRenderer(MapRenderer):
 
     def render(self):
         """
-        prepare a blank new svg file
+        The render() method prepares a new empty SVG document and
+        stores all the layer features into SVG groups.
         """
         self._init_svg_doc()
         self._store_layers_to_svg()
 
     def _init_svg_doc(self):
+        # Load width and height of the map view
+        # We add two pixels to the height to ensure that
+        # the map fits.
         w = self.map.view.width
-        h = self.map.view.height + 2  # add some pixels (why?)
+        h = self.map.view.height + 2
 
+        # SvgDocument is a handy wrapper around xml.dom.minidom. It is defined below.
         svg = SvgDocument(
             width='%dpx' % w,
             height='%dpx' % h,
@@ -146,11 +159,19 @@ class SvgRenderer(MapRenderer):
         self.svg.preview()
 
 
-from xml.dom import minidom
-
+# SvgDocument
+# -----------
+#
+# SVGDocument is a handy wrapper around xml.dom.minidom which allows us
+# to quickly build XML structures. It is largely inspired by the SVG class
+# of the [svgfig](http://code.google.com/p/svgfig/) project, which was
+# used by one of the earlier versions of Kartograph.
+#
 
 class SvgDocument(object):
 
+    # Of course, we need to create and XML document with all this
+    # boring SVG header stuff added to it.
     def __init__(self, **kwargs):
         imp = minidom.getDOMImplementation('')
         dt = imp.createDocumentType('svg',
@@ -163,6 +184,10 @@ class SvgDocument(object):
         svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
         _add_attrs(self.root, kwargs)
 
+    # This is the magic of SvgDocument. Instead of having to do appendChild()
+    # and addAttribute() for every node we create, we just call svgdoc.node()
+    # which is smart enough to append itself to the parent if we specify one,
+    # and also sets all attributes we pass as keyword arguments.
     def node(self, name, parent=None, **kwargs):
         el = self.doc.createElement(name)
         _add_attrs(el, kwargs)
@@ -170,6 +195,8 @@ class SvgDocument(object):
             parent.appendChild(el)
         return el
 
+    # Sometimes we also need a <[CDATA]> block, for instance if we embed
+    # CSS code in the SVG document.
     def cdata(self, data, parent=None):
         cd = minidom.CDATASection()
         cd.data = data
@@ -177,11 +204,8 @@ class SvgDocument(object):
             parent.appendChild(cd)
         return cd
 
-    def preview(self):
-        self.write('tmp.svg')
-        from subprocess import call
-        call(["firefox", "tmp.svg"])
-
+    # Here we finally write the SVG file, and we're brave enough
+    # to try to write it in Unicode.
     def write(self, outfile):
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
@@ -194,12 +218,21 @@ class SvgDocument(object):
         outfile.write(raw)
         outfile.close()
 
+    # Don't blame me if you don't have a command-line shortcut to
+    # simply the best free browser of the world.
+    def preview(self):
+        self.write('tmp.svg')
+        from subprocess import call
+        call(["firefox", "tmp.svg"])
+
     def tostring(self):
         return self.doc.toxml()
 
+    # This is an artifact of an older version of Kartograph, but
+    # maybe we'll need it later. It will load an SVG document from
+    # a file.
     @staticmethod
     def load(filename):
-        from xml.dom.minidom import parse
         svg = SvgDocument()
         dom = parse(filename)
         svg.doc = dom
