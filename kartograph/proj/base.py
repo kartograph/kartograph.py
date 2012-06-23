@@ -113,6 +113,9 @@ class Proj(object):
     def project(self, lon, lat):
         assert False, 'Proj is an abstract class'
 
+    def project_inverse(self, x, y):
+        assert False, 'inverse projection is not supporte by %s' % self.name
+
     def _visible(self, lon, lat):
         assert False, 'Proj is an abstract class'
 

@@ -43,7 +43,9 @@ class Feature:
             try:
                 self.geometry = self.geometry.difference(geom)
             except TopologicalError:
-                print 'warning: couldnt subtract from geometry'
+                pass
+                #print e.message
+                #print 'warning: couldnt subtract from geometry'
 
     def geometry_to_svg(self, svg, round):
         raise NotImplementedError('geometry_to_svg() needs to be implemented by geometry specific Feature classes')

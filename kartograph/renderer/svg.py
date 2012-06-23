@@ -158,6 +158,9 @@ class SvgRenderer(MapRenderer):
     def preview(self):
         self.svg.preview()
 
+    def __str__(self):
+        return self.svg.tostring()
+
 
 # SvgDocument
 # -----------

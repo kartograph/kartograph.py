@@ -18,6 +18,7 @@
 
 from azimuthal import Azimuthal
 import math
+import pyproj
 
 
 class LAEA(Azimuthal):
@@ -29,15 +30,23 @@ class LAEA(Azimuthal):
     """
     def __init__(self, lon0=0.0, lat0=0.0):
         self.scale = math.sqrt(2) * 0.5
+        self.proj = pyproj.Proj(proj='laea', lat_0=lat0, lon_0=lon0)
         Azimuthal.__init__(self, lat0, lon0)
 
+    def project_proj4(self, lon, lat):
+        return self.proj(lon, lat)
+
+    def project_inverse(self, x, y):
+        return self.proj(x, y, inverse=True)
+
     def project(self, lon, lat):
+        # old projection code
         from math import radians as rad, pow, cos, sin
         # lon,lat = self.ll(lon, lat)
         phi = rad(lat)
         lam = rad(lon)
 
-        if False and abs(lon - self.lon0) == 180:
+        if abs(lon - self.lon0) == 180:
             xo = self.r * 2
             yo = 0
         else:

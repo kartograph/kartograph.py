@@ -3,6 +3,8 @@ from layersource import LayerSource
 from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
 
+verbose = True
+
 
 class ShapefileLayer(LayerSource):
     """
