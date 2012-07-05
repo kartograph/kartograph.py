@@ -4,7 +4,9 @@ API 2.0
 helper methods for validating options dictionary
 """
 
-import os.path, proj, errors
+import os.path
+import proj
+import errors
 
 
 Error = errors.KartographOptionParseError
@@ -12,6 +14,29 @@ Error = errors.KartographOptionParseError
 
 def is_str(s):
     return isinstance(s, (str, unicode))
+
+
+def read_map_descriptor(f):
+    content = f.read()
+    ext = os.path.splitext(f.name)[1].lower()
+    if ext == '.json':
+        import json
+        try:
+            cfg = json.loads(content)
+        except Exception, e:
+            raise errors.KartographError('parsing of json map configuration failed.\n' + e)
+        else:
+            return cfg
+    elif ext in ('.yaml', '.yml'):
+        import yaml
+        try:
+            cfg = yaml.load(content)
+        except Exception, e:
+            raise errors.KartographError('parsing of yaml map configuration failed.\n' + e)
+        else:
+            return cfg
+    else:
+        raise errors.KartographError('supported config formats are .json and .yaml')
 
 
 def parse_options(opts):
@@ -152,6 +177,8 @@ def parse_layer_join(layer):
 
 
 def parse_layer_simplify(layer):
+    if 'filter-islands' not in layer:
+        layer['filter-islands'] = False
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
     if 'simplify' not in layer:
@@ -166,8 +193,6 @@ def parse_layer_simplify(layer):
         layer['simplify']['tolerance'] = float(layer['simplify']['tolerance'])
     except ValueError:
         raise Error('could not convert simplification amount to float')
-    if 'filter-islands' not in layer:
-        layer['filter-islands'] = False
 
 
 def parse_layer_subtract(layer):

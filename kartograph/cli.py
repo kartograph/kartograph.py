@@ -5,8 +5,7 @@ command line interface for kartograph
 
 import argparse
 import os.path
-import json
-from errors import KartographError
+from options import read_map_descriptor
 
 
 class bcolors:
@@ -42,29 +41,8 @@ import sys
 import os
 
 
-def parse_config(f):
-    content = f.read()
-    if f.name[-5:].lower() == '.json':
-        try:
-            cfg = json.loads(content)
-        except Exception, e:
-            raise KartographError('parsing of json map configuration failed.\n' + e)
-        else:
-            return cfg
-    elif f.name[-5:].lower() == '.yaml':
-        import yaml
-        try:
-            cfg = yaml.load(content)
-        except Exception, e:
-            raise KartographError('parsing of yaml map configuration failed.\n' + e)
-        else:
-            return cfg
-    else:
-        raise KartographError('supported config formats are .json and .yaml')
-
-
 def render_map(args):
-    cfg = parse_config(args.config)
+    cfg = read_map_descriptor(args.config)
     K = Kartograph()
     if args.format:
         format = args.format
