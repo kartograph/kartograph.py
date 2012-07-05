@@ -3,6 +3,10 @@ from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString,
 from kartograph.errors import KartographError
 
 
+# # View
+
+# Simple 2D coordinate transformation.
+
 class View(object):
     """
     translates a point to a view

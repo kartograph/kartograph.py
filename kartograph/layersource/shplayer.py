@@ -3,7 +3,7 @@ from layersource import LayerSource
 from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
 
-verbose = True
+verbose = False
 
 
 class ShapefileLayer(LayerSource):
@@ -26,7 +26,8 @@ class ShapefileLayer(LayerSource):
 
     def load_records(self):
         """
-        load shapefile records into memory. note that only the records are loaded and not the shapes.
+        ### Load records
+        Load shapefile records into memory (but not the shapes).
         """
         self.recs = self.sr.records()
         self.attributes = []
@@ -40,7 +41,9 @@ class ShapefileLayer(LayerSource):
 
     def get_shape(self, i):
         """
-        returns a shape of this shapefile. if requested for the first time, the shape is loaded from shapefile (slow)
+        ### Get shape
+        Returns a shape of this shapefile. If the shape is requested for the first time,
+        it will be loaded from the shapefile. Otherwise it will loaded from cache.
         """
         if i in self.shapes:  # check cache
             shp = self.shapes[i]
@@ -50,27 +53,33 @@ class ShapefileLayer(LayerSource):
 
     def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False, charset='utf-8'):
         """
-        returns a list of features matching to the attr -> value pair
+        ### Get features
         """
         res = []
+        # We will try these encodings..
         try_encodings = ('utf-8', 'latin-1', 'iso-8859-2')
         tried_encodings = [charset]
+        # Eventually we convert the bbox list into a proper BBox instance
         if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
         ignored = 0
         for i in range(0, len(self.recs)):
+            # Read all record attributes
             drec = {}
             for j in range(len(self.attributes)):
                 drec[self.attributes[j]] = self.recs[i][j]
+            # For each record that is not filtered..
             if filter is None or filter(drec):
                 props = {}
+                # ..we try to decode the attributes (shapefile charsets are arbitrary)
                 for j in range(len(self.attributes)):
                     val = self.recs[i][j]
                     if isinstance(val, str):
                         try:
                             val = val.decode(charset)
                         except:
-                            print 'warning: could not decode "%s" to %s' % (val, charset)
+                            if verbose:
+                                print 'warning: could not decode "%s" to %s' % (val, charset)
                             next_guess = False
                             for enc in try_encodings:
                                 if enc not in tried_encodings:
@@ -78,7 +87,8 @@ class ShapefileLayer(LayerSource):
                                     tried_encodings.append(enc)
                                     break
                             if next_guess:
-                                print 'trying %s now..' % next_guess
+                                if verbose:
+                                    print 'trying %s now..' % next_guess
                                 charset = next_guess
                                 j -= 1
                                 continue
@@ -88,18 +98,24 @@ class ShapefileLayer(LayerSource):
                         val = val.strip()
                     props[self.attributes[j]] = val
 
+                # Read the shape from the shapefile (can take some time..)..
                 shp = self.get_shape(i)
 
+                # ..and convert the raw shape into a shapely.geometry
                 geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area, bbox=bbox)
                 if geom is None:
                     ignored += 1
                     continue
 
+                # Finally we construct the map feature and append it to the
+                # result list
                 feature = create_feature(geom, props)
                 res.append(feature)
         if bbox is not None and ignored > 0 and verbose:
             print "-ignoring %d shapes (not in bounds %s )" % (ignored, bbox)
         return res
+
+# # shape2geometry
 
 
 def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False):

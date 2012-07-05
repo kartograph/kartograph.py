@@ -1,13 +1,16 @@
 
 from kartograph.errors import KartographError
 from shapely.geos import TopologicalError
+import re
+
+verbose = False
+
+# # Feature
+# Base class for map features. Each feature has a geometry (shapely.geometry.*)
+# and a property dictionary
 
 
 class Feature:
-    """
-    feature = geometry + properties
-    geometry should be shapely geometry
-    """
     def __init__(self, geometry, properties):
         self.geometry = geometry
         self.properties = properties
@@ -36,16 +39,16 @@ class Feature:
                 else:
                     self.geometry = None
             else:
-                print "warning: geometry is invalid"
+                if verbose:
+                    print "warning: geometry is invalid"
 
     def subtract_geom(self, geom):
         if self.geometry:
             try:
                 self.geometry = self.geometry.difference(geom)
             except TopologicalError:
-                pass
-                #print e.message
-                #print 'warning: couldnt subtract from geometry'
+                if verbose:
+                    print 'warning: couldnt subtract from geometry'
 
     def geometry_to_svg(self, svg, round):
         raise NotImplementedError('geometry_to_svg() needs to be implemented by geometry specific Feature classes')

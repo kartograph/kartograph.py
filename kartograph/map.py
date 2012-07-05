@@ -153,10 +153,12 @@ class Map(object):
 
     def _init_bounds(self):
         """
+        ### Initialize bounding polygons and bounding box
         ### Compute the projected bounding box
         """
         if self.format in ('kml', 'json'):
-            return None  # no bounds needed for KML
+            # We don't need boundary for KML and GeoJSON
+            return None
 
         from geometry.utils import bbox_to_polygon
 
@@ -201,7 +203,7 @@ class Map(object):
                 raise KartographError('no features found for calculating the map bounds')
         # If we need some extra geometry around the map bounds, we inflate
         # the bbox according to the set *padding*.
-        bbox.inflate(bbox.width * opts['padding'])
+        bbox.inflate(bbox.width * opts['bounds']['padding'])
         # At the end we convert the bounding box to a Polygon because
         # we need it for clipping tasks.
         return bbox_to_polygon(bbox)
@@ -252,6 +254,8 @@ class Map(object):
             min_area=data["min-area"],
             charset=layer.options['charset']
         )
+
+        print 'found %d bounding features' % len(features)
 
         # Omit tiny islands, if needed.
         if layer.options['filter-islands']:
