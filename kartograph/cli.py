@@ -24,7 +24,7 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
-parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles')
+parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles (dpa edition 2)')
 
 #subparsers = parser.add_subparsers(help='sub-command help')
 

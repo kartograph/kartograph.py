@@ -1,0 +1,6 @@
+# osm test config
+layers:
+- id: streets
+  src: osm:dbname=germany-osm
+  osm-type: polygon
+  osm-query: "highway = 'motorway'"

@@ -85,8 +85,10 @@ def parse_layers(opts):
         if 'src' not in layer and 'special' not in layer:
             raise Error('you need to define the source for your layers')
         if 'src' in layer:
-            if not os.path.exists(layer['src']):
-                raise Error('layer source not found: ' + layer['src'])
+            # We must not check if the file exists, since
+            # we might deal with a database connection
+            #if not os.path.exists(layer['src']):
+            #    raise Error('layer source not found: ' + layer['src'])
             if 'id' not in layer:
                 layer['id'] = 'layer_' + str(l_id)
                 l_id += 1
