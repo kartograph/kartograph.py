@@ -66,3 +66,14 @@ class BBox(object):
         self.bottom = self.ymax
         self.width = self.xmax - self.xmin
         self.height = self.ymax - self.ymin
+
+    def __getitem__(self, k):
+        if k == 0:
+            return self.xmin
+        if k == 1:
+            return self.ymin
+        if k == 2:
+            return self.xmax
+        if k == 3:
+            return self.ymax
+        return None

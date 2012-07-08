@@ -53,7 +53,7 @@ def render_map(args):
     try:
 
         # generate the map
-        K.generate(cfg, args.output, verbose=args.verbose, preview=args.preview, format=format)
+        K.generate(cfg, args.output, preview=args.preview, format=format)
 
     except Exception, e:
         import traceback

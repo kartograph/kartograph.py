@@ -472,4 +472,3 @@ class Map(object):
                     if g_id in groupFeatures:
                         res += join_features(groupFeatures[g_id], props)
                 layer.features = res
-

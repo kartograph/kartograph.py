@@ -31,3 +31,4 @@ def handle_layer_source(layer, cache={}):
             return GraticuleLayer()
         elif layer['special'] == 'sea':
             return SeaLayer()
+            
