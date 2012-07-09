@@ -29,10 +29,11 @@ def handle_layer_source(layer, cache={}):
         # If the source url ends with ".shp", we will use the Shapefile reader
         if src[-4:].lower() == ".shp":
             src = ShapefileLayer(src)
-        if src[:4] == "osm:":
+            if isinstance(src, LayerSource):
+                cache[layer['src']] = src
+                return src
+        elif src[:4] == "osm:":
             src = OpenStreetMapLayer(src[4:], osm_query=layer['osm-query'], osm_type=layer['osm-type'])
-        if isinstance(src, LayerSource):
-            cache[layer['src']] = src
             return src
         else:
             raise KartographLayerSourceError('don\'t know how to handle "' + src + '"')

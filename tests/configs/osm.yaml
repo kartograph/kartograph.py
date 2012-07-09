@@ -3,4 +3,7 @@ layers:
 - id: streets
   src: osm:dbname=germany-osm
   osm-type: polygon
-  osm-query: "highway = 'motorway'"
+  osm-query: "\"natural\" = 'water' OR \"waterway\" = 'riverbank'"
+bounds:
+  mode: bbox
+  data: [11.37, 51.969, 11.876, 52.337]
