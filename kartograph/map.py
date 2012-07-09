@@ -15,6 +15,8 @@ from errors import KartographError
 # loads the features for each layer, processes them and passes them
 # to a renderer at the end.
 
+verbose = False
+
 
 class Map(object):
 
@@ -148,7 +150,8 @@ class Map(object):
                 lon0 = 0
                 lat0 = 0
         else:
-            print "unrecognized bound mode", mode
+            if verbose:
+                print "unrecognized bound mode", mode
         return (lon0, lat0)
 
     def _init_bounds(self):
@@ -255,7 +258,8 @@ class Map(object):
             charset=layer.options['charset']
         )
 
-        print 'found %d bounding features' % len(features)
+        if verbose:
+            print 'found %d bounding features' % len(features)
 
         # Omit tiny islands, if needed.
         if layer.options['filter-islands']:
@@ -470,5 +474,9 @@ class Map(object):
                         props[groupAs] = g_id
                     # Finally join (union) the feature geometries.
                     if g_id in groupFeatures:
-                        res += join_features(groupFeatures[g_id], props)
+                        if 'buffer' in join:
+                            buffer_polygons = join['buffer']
+                        else:
+                            buffer_polygons = 0
+                        res += join_features(groupFeatures[g_id], props, buf=buffer_polygons)
                 layer.features = res

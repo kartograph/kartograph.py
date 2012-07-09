@@ -58,7 +58,7 @@ def geom_to_bbox(geom, min_area=0):
     return bbox
 
 
-def join_features(features, props):
+def join_features(features, props, buf=False):
     """ joins polygonal features
     """
     from feature import MultiPolygonFeature
@@ -78,7 +78,11 @@ def join_features(features, props):
     polygons = filter(lambda x: x is not None, polygons)
     if len(polygons) > 0:
         poly = polygons[0]
+        if buf is not False:
+            poly = poly.buffer(buf, 4)
         for poly2 in polygons[1:]:
+            if buf is not False:
+                poly2 = poly2.buffer(buf, 4)
             poly = poly.union(poly2)
         joined.append(MultiPolygonFeature(poly, props))
     return joined
