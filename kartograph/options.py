@@ -128,8 +128,8 @@ def parse_layer_attributes(layer):
         if is_str(attr):
             if isinstance(layer['attributes'], list):  # ["ISO_A3", "FIPS"]
                 attrs.append({'src': attr, 'tgt': attr})
-            elif isinstance(layer['attributes'], dict):  # { "ISO_A3": "iso" }
-                attrs.append({'src': attr, 'tgt': layer['attributes'][attr]})
+            elif isinstance(layer['attributes'], dict):  # { "iso": "ISO_A3" }
+                attrs.append({'src': layer['attributes'][attr], 'tgt': attr})
         elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
             attrs.append(attr)
     layer['attributes'] = attrs
