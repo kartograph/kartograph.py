@@ -59,7 +59,7 @@ class View(object):
             if isinstance(geom, Polygon):
                 res += self.project_polygon(geom)
             elif isinstance(geom, LineString):
-                rings = self.project_linear_ring(geom.coords)
+                rings = self.project_linear_ring(geom)
                 res += map(LineString, rings)
             elif isinstance(geom, Point):
                 if self._visible(geom.x, geom.y):

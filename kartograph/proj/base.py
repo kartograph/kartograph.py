@@ -52,7 +52,7 @@ class Proj(object):
             if isinstance(geom, Polygon):
                 res += self.plot_polygon(geom)
             elif isinstance(geom, LineString):
-                rings = self.plot_linear_ring(geom.coords)
+                rings = self.plot_linear_ring(geom)
                 res += map(LineString, rings)
             elif isinstance(geom, Point):
                 if self._visible(geom.x, geom.y):

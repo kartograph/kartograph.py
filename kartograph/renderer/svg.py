@@ -114,9 +114,13 @@ class SvgRenderer(MapRenderer):
         return node
 
     def _render_geometry(self, geometry):
-        from shapely.geometry import Polygon, MultiPolygon
+        from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString
         if isinstance(geometry, (Polygon, MultiPolygon)):
             return self._render_polygon(geometry)
+        elif isinstance(geometry, (LineString, MultiLineString)):
+            return self._render_line(geometry)
+        else:
+            raise KartographError('svg renderer doesn\'t know how to handle ' + geometry)
 
     def _render_polygon(self, geometry):
         """ constructs a svg representation of a polygon """
@@ -147,6 +151,37 @@ class SvgRenderer(MapRenderer):
                     cont_str += fmt % pt
                 cont_str += "Z "
                 path_str += cont_str
+        if path_str == "":
+            return None
+        path = self.svg.node('path', d=path_str)
+        return path
+
+    def _render_line(self, geometry):
+        """ constructs a svg representation of this line """
+        _round = self.map.options['export']['round']
+        path_str = ""
+        if _round is False:
+            fmt = '%f,%f'
+        else:
+            fmt = '%.' + str(_round) + 'f'
+            fmt = fmt + ',' + fmt
+
+        geoms = hasattr(geometry, 'geoms') and geometry.geoms or [geometry]
+        for line in geoms:
+            if line is None:
+                continue
+            cont_str = ""
+            kept = []
+            for pt in line.coords:
+                kept.append(pt)
+            for pt in kept:
+                if cont_str == "":
+                    cont_str = "M"
+                else:
+                    cont_str += "L"
+                cont_str += fmt % pt
+            cont_str += " "
+            path_str += cont_str
         if path_str == "":
             return None
         path = self.svg.node('path', d=path_str)
