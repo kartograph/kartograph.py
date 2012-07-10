@@ -112,6 +112,7 @@ def parse_layers(opts):
                     s_id += 1
 
         parse_layer_attributes(layer)
+        parse_layer_labeling(layer)
         parse_layer_filter(layer)
         parse_layer_join(layer)
         parse_layer_simplify(layer)
@@ -133,6 +134,32 @@ def parse_layer_attributes(layer):
         elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
             attrs.append(attr)
     layer['attributes'] = attrs
+
+
+def parse_layer_labeling(layer):
+    if 'labeling' not in layer:
+        layer['labeling'] = False
+        return
+    lbl = layer['labeling']
+    if 'position' not in lbl:
+        lbl['position'] = 'centroid'
+    if 'buffer' not in lbl:
+        lbl['buffer'] = False
+    else:
+        if 'color' not in lbl['buffer']:
+            lbl['buffer']['color'] = '#fff'
+        if 'opacity' not in lbl['buffer']:
+            lbl['buffer']['opacity'] = 1
+        if 'width' not in lbl['buffer']:
+            lbl['buffer']['width'] = 1
+    if 'font-size' not in lbl:
+        lbl['font-size'] = 12
+    if 'font-family' not in lbl:
+        lbl['font-family'] = 'Helvetica Neue'
+    if 'color' not in lbl:
+        lbl['color'] = '#555'
+    if 'key' not in lbl:
+        lbl['key'] = False
 
 
 def parse_layer_filter(layer):
@@ -171,7 +198,7 @@ def parse_layer_join(layer):
 
     join = layer['join']
     if 'group-by' not in join:
-        raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
+        join['group-by'] = False
     if 'groups' not in join:
         join['groups'] = None
     if 'group-as' not in join:

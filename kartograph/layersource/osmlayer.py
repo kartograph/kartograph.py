@@ -55,7 +55,7 @@ class OpenStreetMapLayer(LayerSource):
             bbox_poly = 'POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))' % bbox_coords
             query = "(%s) AND ST_Intersects( way, ST_SetSRID(ST_GeomFromEWKT('%s'), 4326) )" % (query, bbox_poly)
 
-        print "reading from postgis database"
+        print "reading from postgis database / " + self.query
 
         # Open database connection
         cur = self.conn.cursor()
@@ -69,6 +69,7 @@ class OpenStreetMapLayer(LayerSource):
         features = []
         # Query features
         cur.execute('SELECT "%s" FROM planet_osm_%s WHERE %s' % ('", "'.join(fields), self.type, query))
+
         for rec in cur:
             # Populate property dictionary
             meta = {}

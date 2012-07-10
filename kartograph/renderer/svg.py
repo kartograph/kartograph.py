@@ -66,13 +66,25 @@ class SvgRenderer(MapRenderer):
         store features in svg
         """
         svg = self.svg
+        label_groups = []
         for layer in self.map.layers:
             if len(layer.features) == 0:
                 print "ignoring empty layer", layer.id
                 continue  # ignore empty layers
             g = svg.node('g', svg.root, id=layer.id)
+            lbl = layer.options['labeling']
+            # Create an svg group for labels of this layer
+            if lbl is not False:
+                lg = svg.node('g', id=layer.id + '_labels', font__size=lbl['font-size'], font__family=lbl['font-family'], fill=lbl['color'])
+                if lbl['buffer'] is not False:
+                    lg.setAttribute('stroke-width',  '%fpx' % lbl['buffer']['width'])
+                    lg.setAttribute('stroke', lbl['buffer']['color'])
+                    lg.setAttribute('stroke-opacity', str(lbl['buffer']['opacity']))
+                label_groups.append(lg)
+            else:
+                lg = None
             for feat in layer.features:
-                node = self._render_feature(feat, layer.options['attributes'])
+                node = self._render_feature(feat, layer.options['attributes'], labelOpts=lbl, labelGroup=lg)
                 if node is not None:
                     g.appendChild(node)
                 else:
@@ -80,11 +92,17 @@ class SvgRenderer(MapRenderer):
             if 'styles' in layer.options:
                 for prop in layer.options['styles']:
                     g.setAttribute(prop, str(layer.options['styles'][prop]))
+        # Finally add label groups on top of all other groups
+        for lg in label_groups:
+            svg.root.appendChild(lg)
 
-    def _render_feature(self, feature, attributes=[]):
-        node = self._render_geometry(feature.geometry)
+    def _render_feature(self, feature, attributes=[], labelOpts=False, labelGroup=None):
+        node = self._render_geometry(feature.geometry, labelOpts, labelGroup)
         if node is None:
             return None
+
+        if labelOpts is not False:
+            self._render_label(feature, labelOpts, labelGroup)
 
         for cfg in attributes:
             if 'src' in cfg:
@@ -113,16 +131,18 @@ class SvgRenderer(MapRenderer):
             node.setAttribute('fill', self.props['__color__'])
         return node
 
-    def _render_geometry(self, geometry):
+    def _render_geometry(self, geometry, labelOpts, labelGroup):
         from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString
+        if geometry is None:
+            return
         if isinstance(geometry, (Polygon, MultiPolygon)):
-            return self._render_polygon(geometry)
+            return self._render_polygon(geometry, labelOpts, labelGroup)
         elif isinstance(geometry, (LineString, MultiLineString)):
-            return self._render_line(geometry)
+            return self._render_line(geometry, labelOpts, labelGroup)
         else:
-            raise KartographError('svg renderer doesn\'t know how to handle ' + geometry)
+            raise KartographError('svg renderer doesn\'t know how to handle ' + str(type(geometry)))
 
-    def _render_polygon(self, geometry):
+    def _render_polygon(self, geometry, labelOpts, labelGroup):
         """ constructs a svg representation of a polygon """
         _round = self.map.options['export']['round']
         path_str = ""
@@ -156,7 +176,7 @@ class SvgRenderer(MapRenderer):
         path = self.svg.node('path', d=path_str)
         return path
 
-    def _render_line(self, geometry):
+    def _render_line(self, geometry, labelOpts, labelGroup):
         """ constructs a svg representation of this line """
         _round = self.map.options['export']['round']
         path_str = ""
@@ -186,6 +206,21 @@ class SvgRenderer(MapRenderer):
             return None
         path = self.svg.node('path', d=path_str)
         return path
+
+    def _render_label(self, feature, labelOpts, labelGroup):
+        if feature.geometry.area < 20:
+            return
+        cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        key = labelOpts['key']
+        if not key:
+            key = feature.props.keys()[0]
+        text = feature.props[key]
+        if labelOpts['buffer'] is not False:
+            lblBuf = self.svg.node('text', labelGroup, x=cx, y=cy - labelOpts['font-size'] * 0.5, text__anchor='middle')
+            self.svg.cdata(text, lblBuf)
+
+        lbl = self.svg.node('text', labelGroup, stroke='none', x=cx, y=cy - labelOpts['font-size'] * 0.5, text__anchor='middle')
+        self.svg.cdata(text, lbl)
 
     def write(self, filename):
         self.svg.write(filename)
@@ -280,4 +315,12 @@ class SvgDocument(object):
 
 def _add_attrs(node, attrs):
     for key in attrs:
-        node.setAttribute(key, str(attrs[key]))
+        node.setAttribute(key.replace('__', '-'), str(attrs[key]))
+
+
+def _get_label_position(geometry, pos):
+    if pos == 'centroid':
+        pt = geometry.centroid
+        return (pt.x, pt.y)
+    else:
+        raise KartographError('unknown label positioning mode ' + pos)

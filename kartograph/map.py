@@ -432,7 +432,7 @@ class Map(object):
                 # The property we want to group the features by.
                 groupBy = join['group-by']
                 groups = join['groups']
-                if not groups:
+                if groupBy is not False and not groups:
                     # If no groups are defined, we'll create a group for each
                     # unique value of the ``group-by` property.
                     groups = {}
@@ -441,20 +441,29 @@ class Map(object):
                         groups[fid] = [fid]
 
                 groupFeatures = {}
+
+                # Group all features into one group if no group-by is set
+                if groupBy is False:
+                    groupFeatures[layer.id] = []
+                    groups = [layer.id]
+
                 res = []
                 # Find all features for each group.
                 for feat in layer.features:
-                    found_in_group = False
-                    for g_id in groups:
-                        if g_id not in groupFeatures:
-                            groupFeatures[g_id] = []
-                        if feat.props[groupBy] in groups[g_id] or str(feat.props[groupBy]) in groups[g_id]:
-                            groupFeatures[g_id].append(feat)
-                            found_in_group = True
-                            break
-                    if not found_in_group:
-                        unjoined += 1
-                        res.append(feat)
+                    if groupBy is False:
+                        groupFeatures[layer.id].append(feat)
+                    else:
+                        found_in_group = False
+                        for g_id in groups:
+                            if g_id not in groupFeatures:
+                                groupFeatures[g_id] = []
+                            if feat.props[groupBy] in groups[g_id] or str(feat.props[groupBy]) in groups[g_id]:
+                                groupFeatures[g_id].append(feat)
+                                found_in_group = True
+                                break
+                        if not found_in_group:
+                            unjoined += 1
+                            res.append(feat)
 
                 for g_id in groups:
                     # Make a copy of the input features properties.

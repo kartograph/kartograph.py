@@ -54,20 +54,23 @@ def render_map(args):
         K.generate(cfg, args.output, preview=args.preview, format=format)
 
     except Exception, e:
-        import traceback
-        ignore_path_len = len(__file__) - 7
-        exc = sys.exc_info()
-        for (filename, line, func, code) in traceback.extract_tb(exc[2]):
-            if filename[:len(__file__) - 7] == __file__[:-7]:
-                print '  \033[1;33;40m%s\033[0m, \033[0;37;40min\033[0m %s()\n  \033[1;31;40m%d:\033[0m \033[0;37;40m%s\033[0m' % (filename[ignore_path_len:], func, line, code)
-            else:
-                print '  %s, in %s()\n  %d: %s' % (filename, func, line, code)
-        print
-        print e
+        print_error(e)
         exit(-1)
 
 parser.set_defaults(func=render_map)
 
+
+def print_error(e):
+    import traceback
+    ignore_path_len = len(__file__) - 7
+    exc = sys.exc_info()
+    for (filename, line, func, code) in traceback.extract_tb(exc[2]):
+        if filename[:len(__file__) - 7] == __file__[:-7]:
+            print '  \033[1;33;40m%s\033[0m, \033[0;37;40min\033[0m %s()\n  \033[1;31;40m%d:\033[0m \033[0;37;40m%s\033[0m' % (filename[ignore_path_len:], func, line, code)
+        else:
+            print '  %s, in %s()\n  %d: %s' % (filename, func, line, code)
+    print
+    print e
 
 def main():
     start = time.time()
