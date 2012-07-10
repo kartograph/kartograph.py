@@ -61,6 +61,7 @@ class Feature:
 
     def to_svg(self, svg, round, attributes=[], styles=None):
         node = self.geometry_to_svg(svg, round)
+        print 'to_svg', node
         if node is None:
             return None
         # todo: add data attribtes

@@ -24,11 +24,9 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
+
 parser = argparse.ArgumentParser(prog='kartograph', description='generating svg maps from shapefiles (dpa edition 2)')
 
-#subparsers = parser.add_subparsers(help='sub-command help')
-
-#parser_svg = subparsers.add_parser('svg', help='generates svg map')
 parser.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
 parser.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
 parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
