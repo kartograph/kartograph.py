@@ -9,37 +9,6 @@ class MultiPolygonFeature(Feature):
     def __repr__(self):
         return 'MultiPolygonFeature()'
 
-    def geometry_to_svg(self, svg, round):
-        """ constructs a svg representation of this polygon """
-        path_str = ""
-        if round is False:
-            fmt = '%f,%f'
-        else:
-            fmt = '%.' + str(round) + 'f'
-            fmt = fmt + ',' + fmt
-        for polygon in self._geoms:
-            if polygon is None:
-                continue
-            for ring in [polygon.exterior] + list(polygon.interiors):
-                cont_str = ""
-                kept = []
-                for pt in ring.coords:
-                    kept.append(pt)
-                if len(kept) <= 3:
-                    continue
-                for pt in kept:
-                    if cont_str == "":
-                        cont_str = "M"
-                    else:
-                        cont_str += "L"
-                    cont_str += fmt % pt
-                cont_str += "Z "
-                path_str += cont_str
-        if path_str == "":
-            return None
-        path = svg.node('path', d=path_str)
-        return path
-
     def project_geometry(self, proj):
         """ project the geometry """
         self.geometry = proj.plot(self.geometry)
