@@ -50,7 +50,7 @@ class MapLayer(object):
                 if layer.map._unprojected_bounds:
                     bbox = layer.map._unprojected_bounds
                     bbox.inflate(inflate=opts['bounds']['padding'] * 2)
-                else:
+                elif _verbose:
                     print 'could not compute bounding box for auto-cropping'
             else:
                 # otherwise it will use the user defined bbox in the format

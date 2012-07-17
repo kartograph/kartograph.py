@@ -94,7 +94,6 @@ class SvgRenderer(MapRenderer):
                                 for val in style['attrs']:
                                     if col in feat.props and feat.props[col] == val:
                                         attrs = style['attrs'][val]
-                                        print attrs
                                         for prop in attrs:
                                             node.setAttribute(prop, str(attrs[prop]))
                     g.appendChild(node)
