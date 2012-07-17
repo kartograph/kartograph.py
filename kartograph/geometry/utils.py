@@ -61,17 +61,21 @@ def geom_to_bbox(geom, min_area=0):
 def join_features(features, props, buf=False):
     """ joins polygonal features
     """
-    from feature import MultiPolygonFeature
+    from feature import MultiPolygonFeature, MultiLineFeature
+    from shapely.ops import linemerge
 
     if len(features) == 0:
         return features
 
     joined = []
     polygons = []
+    lines = []
 
     for feat in features:
         if isinstance(feat, MultiPolygonFeature):
             polygons.append(feat.geom)
+        elif isinstance(feat, MultiLineFeature):
+            lines.append(feat.geom)
         else:
             joined.append(feat)  # cannot join this
 
@@ -85,4 +89,11 @@ def join_features(features, props, buf=False):
                 poly2 = poly2.buffer(buf, 4)
             poly = poly.union(poly2)
         joined.append(MultiPolygonFeature(poly, props))
+
+    if len(lines) > 0:
+        rings = []
+        for line in lines:
+            geoms = hasattr(line, 'geoms') and line.geoms or [line]
+            rings += geoms
+        joined.append(MultiLineFeature(linemerge(rings), props))
     return joined
