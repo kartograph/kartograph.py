@@ -12,7 +12,11 @@ for path in ('data', 'results'):
 
 if not exists('data/ne_50m_admin_0_countries.shp'):
     # download natural eath shapefile
-    pass
+    print 'I need a shapefile to test with. Will download one from naturalearthdata.com\n'
+    from subprocess import call
+    call(['wget', 'http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/cultural/50m-admin-0-countries.zip'])
+    print '\nUnzipping...\n'
+    call(['unzip', '50m-admin-0-countries.zip', '-d', 'data'])
 
 passed = 0
 failed = 0
