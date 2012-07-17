@@ -306,14 +306,15 @@ def parse_styles(layer):
     if 'styles' not in layer:
         layer['styles'] = {}
     styles = layer['styles']
-    key = styles.keys()[0]
-    if key != 'single' and key[:11] != 'categorized':
-        props = deepcopy(styles)
-        styles = layer['styles'] = dict(single=props)
-    for key in styles.keys():
-        if key[:11] == 'categorized':
-            if 'column' not in styles[key]:
-                raise Error('column missing for categorized styling')
+    if len(styles.keys()) > 0:
+        key = styles.keys()[0]
+        if key != 'single' and key[:11] != 'categorized':
+            props = deepcopy(styles)
+            styles = layer['styles'] = dict(single=props)
+        for key in styles.keys():
+            if key[:11] == 'categorized':
+                if 'column' not in styles[key]:
+                    raise Error('column missing for categorized styling')
 
 
 def _xfrange(start, stop, step):
@@ -328,11 +329,10 @@ def parse_bounds(opts):
         #return
     bounds = opts['bounds']
     if 'mode' not in bounds:
-        bounds['mode'] = 'bbox'
+        bounds['mode'] = 'polygons'
 
     if 'data' not in bounds:
-        bounds['data'] = [-180, -90, 180, 90]
-        bounds['mode'] = 'bbox'
+        bounds['data'] = {}
 
     mode = bounds['mode']
     data = bounds['data']
@@ -366,10 +366,12 @@ def parse_bounds(opts):
             raise
         except:
             raise Error('bounds mode points requires array with (lon,lat) tuples')
-    elif mode in ("polygons", "polygon"):
+    elif mode[:4] == 'poly':
         bounds['mode'] = mode = "polygons"
         if "layer" not in data or not is_str(data["layer"]):
-            raise Error('you must specify a layer for bounds mode ' + mode)
+            # using the first layer for bound
+            data["layer"] = opts['layers'][0]['id']
+            # raise Error('you must specify a layer for bounds mode ' + mode)
         if "filter" not in data:
             data["filter"] = False
         if "attribute" not in data or not is_str(data["attribute"]):
