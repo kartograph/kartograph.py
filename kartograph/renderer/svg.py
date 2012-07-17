@@ -99,15 +99,6 @@ class SvgRenderer(MapRenderer):
                 else:
                     print "feature.to_svg is None", feat
             if 'styles' in layer.options:
-<<<<<<< Updated upstream
-                for prop in layer.options['styles']:
-                    g.setAttribute(prop, str(layer.options['styles'][prop]))
-<<<<<<< Updated upstream
-        # Finally add label groups on top of all other groups
-        for lg in label_groups:
-            svg.root.appendChild(lg)
-=======
-=======
                 for mode in layer.options['styles']:
                     if mode == 'single':  # single style for all features
                         for prop in layer.options['styles'][mode]:
@@ -115,8 +106,7 @@ class SvgRenderer(MapRenderer):
         # Finally add label groups on top of all other groups
         for lg in label_groups:
             svg.root.appendChild(lg)
->>>>>>> Stashed changes
->>>>>>> Stashed changes
+
 
     def _render_feature(self, feature, attributes=[], labelOpts=False, labelGroup=None):
         node = self._render_geometry(feature.geometry, labelOpts, labelGroup)
