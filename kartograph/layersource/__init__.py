@@ -33,6 +33,10 @@ def handle_layer_source(layer, cache={}):
                 cache[layer['src']] = src
                 return src
         elif src[:8] == "postgis:":
+            if 'query' not in layer:
+                layer['query'] = 'true'
+            if 'table' not in layer:
+                raise KartographLayerSourceError('you need to specify a table')
             src = PostGISLayer(src[8:], query=layer['query'], table=layer['table'])
             return src
         else:
