@@ -30,7 +30,7 @@ for fn in glob('configs/*.*'):
         import traceback
         ignore_path_len = len(__file__) - 7
         exc = sys.exc_info()
-        log.write('Error in test %s' % fn)
+        log.write('\n\nError in test %s' % fn)
         for (filename, line, func, code) in traceback.extract_tb(exc[2]):
             log.write('  %s, in %s()\n  %d: %s\n' % (filename, func, line, code))
         log.write('\n')
