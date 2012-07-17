@@ -63,7 +63,7 @@ class Map(object):
         # In each layer we will join polygons.
         me._join_features()
         # Eventually we crop geometries to the map bounding rectangle.
-        if options['export']['crop-to-view'] and format != 'kml':
+        if options['export']['crop-to-view']:
             me._crop_layers_to_view()
         # Here's where we apply the simplification to geometries.
         me._simplify_layers()
@@ -78,11 +78,6 @@ class Map(object):
         """
         ### Initializing the map projection
         """
-        # Some output formats don't need map projection at all, so
-        # we just return the identity projection.
-        if self.format in ('kml', 'json'):
-            return projections['ll']()  # use no projection for KML
-
         opts = self.options
         # If either *lat0* or *lon0* were set to "auto", we need to
         # compute a nice center of the projection and update the
@@ -159,10 +154,6 @@ class Map(object):
         ### Initialize bounding polygons and bounding box
         ### Compute the projected bounding box
         """
-        if self.format in ('kml', 'json'):
-            # We don't need boundary for KML and GeoJSON
-            return None
-
         from geometry.utils import bbox_to_polygon
 
         opts = self.options
@@ -274,11 +265,6 @@ class Map(object):
         """
         ### Initialize the view
         """
-        # We don't need any view transformation for KML and
-        # GeoJSON, since the geodata is returned in WSG84
-        if self.format in ('kml', 'json'):
-            return View()
-
         # Compute the bounding box of the bounding polygons.
         self.src_bbox = bbox = geom_to_bbox(self.bounds_poly)
         exp = self.options["export"]
@@ -304,8 +290,6 @@ class Map(object):
         Creates a polygon that represents the rectangular view bounds
         used for cropping the geometries to not overlap the view
         """
-        if self.format in ('kml', 'json'):
-            return None  # no view polygon needed for KML
         w = self.view.width
         h = self.view.height
         return Polygon([(0, 0), (0, h), (w, h), (w, 0)])
