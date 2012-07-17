@@ -7,9 +7,10 @@ helper methods for validating options dictionary
 import os.path
 import proj
 import errors
+from copy import deepcopy
 
 
-Error = errors.KartographOptionParseError
+Error = errors.KartographError
 
 
 def is_str(s):
@@ -24,7 +25,7 @@ def read_map_descriptor(f):
         try:
             cfg = json.loads(content)
         except Exception, e:
-            raise errors.KartographError('parsing of json map configuration failed.\n' + e)
+            raise Error('parsing of json map configuration failed.\n' + e)
         else:
             return cfg
     elif ext in ('.yaml', '.yml'):
@@ -32,11 +33,11 @@ def read_map_descriptor(f):
         try:
             cfg = yaml.load(content)
         except Exception, e:
-            raise errors.KartographError('parsing of yaml map configuration failed.\n' + e)
+            raise Error('parsing of yaml map configuration failed.\n' + e)
         else:
             return cfg
     else:
-        raise errors.KartographError('supported config formats are .json and .yaml')
+        raise Error('supported config formats are .json and .yaml')
 
 
 def parse_options(opts):
@@ -70,7 +71,7 @@ def parse_proj(opts):
             prj[attr] = "auto"
         else:
             if prj[attr] != "auto":
-                prj[attr] = float(prj[attr])
+                prj[attr] = prj[attr]
 
 
 def parse_layers(opts):
@@ -80,8 +81,7 @@ def parse_layers(opts):
     g_id = 0
     s_id = 0
     for layer in opts['layers']:
-        if 'styles' not in layer:
-            layer['styles'] = {}
+        parse_styles(layer)
         if 'src' not in layer and 'special' not in layer:
             raise Error('you need to define the source for your layers')
         if 'src' in layer:
@@ -197,6 +197,8 @@ def parse_layer_join(layer):
         return
 
     join = layer['join']
+    if isinstance(join, bool):
+        join = layer['join'] = {}
     if 'group-by' not in join:
         join['group-by'] = False
     if 'groups' not in join:
@@ -258,6 +260,60 @@ def parse_layer_graticule(layer):
             else:
                 p = [lon, -lon]
             layer['longitudes'] += p
+
+
+# valid style configurations
+#
+# styles:
+#   fill: red
+#
+# styles:
+#   single:
+#     fill: red
+#
+# styles:
+#   categorized:
+#     column: highway
+#     attrs:
+#       motorway:
+#         fill: red
+#       primary:
+#         fill: blue
+#
+# (default to red, all primary roads in blue)
+# styles:
+#   single:
+#     fill: red
+#   categorized:
+#     column: highway
+#     attrs:
+#       primary:
+#         fill: blue
+#
+# (multiple categorization)
+# styles:
+#   categorized-0:
+#     column: highway
+#     attrs:
+#       primary:
+#         fill: blue
+#   categorized-1:
+#     column: maxspeed
+#     attrs:
+#       80:
+#         stroke: white
+def parse_styles(layer):
+    if 'styles' not in layer:
+        layer['styles'] = {}
+    styles = layer['styles']
+    key = styles.keys()[0]
+    if key != 'single' and key[:11] != 'categorized':
+        props = deepcopy(styles)
+        styles = layer['styles'] = dict(single=props)
+    for key in styles.keys():
+        if key[:11] == 'categorized':
+            if 'column' not in styles[key]:
+                raise Error('column missing for categorized styling')
 
 
 def _xfrange(start, stop, step):

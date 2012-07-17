@@ -86,15 +86,37 @@ class SvgRenderer(MapRenderer):
             for feat in layer.features:
                 node = self._render_feature(feat, layer.options['attributes'], labelOpts=lbl, labelGroup=lg)
                 if node is not None:
+                    if 'styles' in layer.options:
+                        for mode in layer.options['styles']:
+                            if mode[:11] == 'categorized':  # categorized styling
+                                style = layer.options['styles'][mode]
+                                col = style['column']
+                                for val in style['attrs']:
+                                    if col in feat.props and feat.props[col] == val:
+                                        for prop in style['attrs'][val]:
+                                            node.setAttribute(prop, str(layer.options['styles'][prop]))
                     g.appendChild(node)
                 else:
                     print "feature.to_svg is None", feat
             if 'styles' in layer.options:
+<<<<<<< Updated upstream
                 for prop in layer.options['styles']:
                     g.setAttribute(prop, str(layer.options['styles'][prop]))
+<<<<<<< Updated upstream
         # Finally add label groups on top of all other groups
         for lg in label_groups:
             svg.root.appendChild(lg)
+=======
+=======
+                for mode in layer.options['styles']:
+                    if mode == 'single':  # single style for all features
+                        for prop in layer.options['styles'][mode]:
+                            g.setAttribute(prop, str(layer.options['styles'][prop]))
+        # Finally add label groups on top of all other groups
+        for lg in label_groups:
+            svg.root.appendChild(lg)
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
     def _render_feature(self, feature, attributes=[], labelOpts=False, labelGroup=None):
         node = self._render_geometry(feature.geometry, labelOpts, labelGroup)
