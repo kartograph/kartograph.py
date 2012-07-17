@@ -72,6 +72,7 @@ def print_error(e):
     print
     print e
 
+
 def main():
     start = time.time()
 
