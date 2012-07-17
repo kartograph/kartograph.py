@@ -14,7 +14,7 @@ def create_feature(geom, props):
     """ checks geometry type and returns the appropriate feature type """
     if geom.type in ('Polygon', 'MultiPolygon'):
         return MultiPolygonFeature(geom, props)
-    elif geom.type in ('LineString'):
+    elif geom.type in ('LineString', 'MultiLineString'):
         return MultiLineFeature(geom, props)
     else:
         raise NotImplementedError('create feature not implemented for geometry type ' + geom.type)
