@@ -6,10 +6,10 @@ as of version 2.0 kartograph supports multiple import formats
 - GeoJSON ?
 """
 
-__all__ = ['LayerSource', 'ShapefileLayer', 'GraticuleLayer', 'OpenStreetMapLayer']
+__all__ = ['LayerSource', 'ShapefileLayer', 'GraticuleLayer', 'PostGISLayer']
 
 from shplayer import ShapefileLayer
-from osmlayer import OpenStreetMapLayer
+from postgislayer import PostGISLayer
 from layersource import LayerSource
 from special import GraticuleLayer, SeaLayer
 from kartograph.errors import *
@@ -32,8 +32,8 @@ def handle_layer_source(layer, cache={}):
             if isinstance(src, LayerSource):
                 cache[layer['src']] = src
                 return src
-        elif src[:4] == "osm:":
-            src = OpenStreetMapLayer(src[4:], osm_query=layer['osm-query'], osm_type=layer['osm-type'])
+        elif src[:8] == "postgis:":
+            src = PostGISLayer(src[8:], query=layer['query'], table=layer['table'])
             return src
         else:
             raise KartographLayerSourceError('don\'t know how to handle "' + src + '"')

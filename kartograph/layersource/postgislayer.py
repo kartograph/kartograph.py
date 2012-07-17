@@ -7,7 +7,7 @@ import shapely.wkb
 verbose = False
 
 
-class PostgisLayer(LayerSource):
+class PostGISLayer(LayerSource):
     """
     This class handles PostGIS layers. You need a running PostgreSQL server
     with a PostGIS enabled database that stores your geodata.
@@ -19,7 +19,6 @@ class PostgisLayer(LayerSource):
         """
         import psycopg2
         self.conn = psycopg2.connect(src)
-        self.type = osm_type
         self.query = query
         self.query_cache = dict()
         self.table = table
@@ -59,7 +58,7 @@ class PostgisLayer(LayerSource):
         # Create a store for properties
         features = []
         # Query features
-        cur.execute('SELECT "%s" FROM planet_osm_%s WHERE %s' % ('", "'.join(fields), self.type, query))
+        cur.execute('SELECT "%s" FROM %s WHERE %s' % ('", "'.join(fields), self.table, query))
 
         for rec in cur:
             # Populate property dictionary
