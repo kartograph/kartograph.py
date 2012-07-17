@@ -93,20 +93,22 @@ class SvgRenderer(MapRenderer):
                                 col = style['column']
                                 for val in style['attrs']:
                                     if col in feat.props and feat.props[col] == val:
-                                        for prop in style['attrs'][val]:
-                                            node.setAttribute(prop, str(layer.options['styles'][prop]))
+                                        attrs = style['attrs'][val]
+                                        print attrs
+                                        for prop in attrs:
+                                            node.setAttribute(prop, str(attrs[prop]))
                     g.appendChild(node)
                 else:
                     print "feature.to_svg is None", feat
             if 'styles' in layer.options:
                 for mode in layer.options['styles']:
                     if mode == 'single':  # single style for all features
-                        for prop in layer.options['styles'][mode]:
-                            g.setAttribute(prop, str(layer.options['styles'][prop]))
+                        attrs = layer.options['styles'][mode]
+                        for prop in attrs:
+                            g.setAttribute(prop, str(attrs[prop]))
         # Finally add label groups on top of all other groups
         for lg in label_groups:
             svg.root.appendChild(lg)
-
 
     def _render_feature(self, feature, attributes=[], labelOpts=False, labelGroup=None):
         node = self._render_geometry(feature.geometry, labelOpts, labelGroup)
