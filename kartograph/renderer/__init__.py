@@ -16,6 +16,5 @@ class MapRenderer(object):
 
 
 from svg import SvgRenderer
-from kml import KmlRenderer
 
-__all__ = ['MapRenderer', 'SvgRenderer', 'KmlRenderer']
+__all__ = ['MapRenderer', 'SvgRenderer']

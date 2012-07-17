@@ -3,7 +3,7 @@ from options import parse_options
 from shapely.geometry import Polygon, LineString, MultiPolygon
 from errors import *
 from copy import deepcopy
-from renderer import SvgRenderer, KmlRenderer
+from renderer import SvgRenderer
 from map import Map
 
 
@@ -12,12 +12,10 @@ from map import Map
 
 verbose = False
 
-# These renderers are currently available. See [renderer/svg.py](renderer/svg.html) and renderer/kml.py
-# for more details on those.
+# These renderers are currently available. See [renderer/svg.py](renderer/svg.html)
 
 _known_renderer = {
-    'svg': SvgRenderer,
-    'kml': KmlRenderer
+    'svg': SvgRenderer
 }
 
 
@@ -31,7 +29,7 @@ class Kartograph(object):
         Generates a the map and renders it using the specified output format.
         """
         if preview is None:
-            preview = outfile is not None
+            preview = outfile is None
 
         # Create a deep copy of the options dictionary so our changes will not be
         # visible to the calling application.
@@ -51,10 +49,7 @@ class Kartograph(object):
             # Create a renderer instance and render the map.
             renderer = _known_renderer[format](_map)
             renderer.render()
-            # If requested, we try to preview the created map now, which means that
-            # we open the created SVG file in Firefox or open the KML in Google Earth.
-            # Of course, preview modes are highly dependent on the operating system, but
-            # we don't care about that now.
+
             if preview:
                 renderer.preview()
             # Write the map to a file or return the renderer instance.
