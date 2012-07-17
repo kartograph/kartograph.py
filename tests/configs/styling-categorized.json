@@ -1,0 +1,24 @@
+{
+    "proj": { "id": "laea" },
+	"layers": [{
+		"src": "data/ne_50m_admin_0_countries.shp",
+		"styles": {
+            "single": {
+                "fill": "#eee"
+            },
+            "categorized": {
+                "column": "ISO_A3",
+                "attrs": {
+                    "DEU": { "fill": "yellow" },
+                    "FRA": { "fill": "darkred" },
+                    "POL": { "stroke-width": "4px" }
+                }
+            }
+		}
+	}],
+    "bounds": {
+        "mode": "bbox",
+        "data": [-10, 40, 20, 60],
+        "padding": 0.06
+    }
+}
