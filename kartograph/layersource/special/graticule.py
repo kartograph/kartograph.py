@@ -1,7 +1,6 @@
 
-from kartograph.geometry import Line, Feature
+from kartograph.geometry import Feature
 from kartograph.layersource.layersource import LayerSource
-from kartograph.proj.azimuthal import Azimuthal
 
 
 class GraticuleLayer(LayerSource):
