@@ -128,7 +128,7 @@ def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False):
     if shp.shapeType in (5, 15):  # multi-polygon
         geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area)
     elif shp.shapeType == 3:  # line
-        geom = points2line(shp)
+        geom = shape2line(shp)
     else:
         raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
     return geom
@@ -192,13 +192,19 @@ def shape2polygon(shp, ignore_holes=False, min_area=False):
     return poly
 
 
-def points2line(shp):
+def shape2line(shp):
     """ converts a shapefile line to geometry.Line """
-    from kartograph.geometry import PolyLine
+    from shapely.geometry import LineString, MultiLineString
+
     parts = shp.parts[:]
     parts.append(len(shp.points))
     lines = []
     for j in range(len(parts) - 1):
         pts = shp.points[parts[j]:parts[j + 1]]
         lines.append(pts)
-    return PolyLine(lines)
+    if len(lines) == 1:
+        return LineString(lines[0])
+    elif len(lines) > 1:
+        return MultiLineString(lines)
+    else:
+        raise KartographError('shapefile import failed - no line found')
