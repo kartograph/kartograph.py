@@ -2,6 +2,10 @@
 from layersource import LayerSource
 from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
+from os.path import exists
+from osr import SpatialReference
+import pyproj
+import shapefile
 
 verbose = False
 
@@ -15,7 +19,6 @@ class ShapefileLayer(LayerSource):
         """
         initialize shapefile reader
         """
-        import shapefile
         if isinstance(src, unicode):
             src = src.encode('ascii', 'ignore')
         self.shpSrc = src
@@ -23,6 +26,17 @@ class ShapefileLayer(LayerSource):
         self.recs = []
         self.shapes = {}
         self.load_records()
+        self.proj = None
+        # Check if there's a spatial reference
+        prj_src = src[:-4] + '.prj'
+        if exists(prj_src):
+            prj_text = open(prj_src).read()
+            srs = SpatialReference()
+            if srs.ImportFromWkt(prj_text):
+                raise ValueError("Error importing PRJ information from: %s" % prj_file)
+            if srs.IsProjected():
+                self.proj = pyproj.Proj(srs.ExportToProj4())
+                print srs.ExportToProj4()
 
     def load_records(self):
         """
@@ -102,7 +116,7 @@ class ShapefileLayer(LayerSource):
                 shp = self.get_shape(i)
 
                 # ..and convert the raw shape into a shapely.geometry
-                geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area, bbox=bbox)
+                geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area, bbox=bbox, proj=self.proj)
                 if geom is None:
                     ignored += 1
                     continue
@@ -118,23 +132,28 @@ class ShapefileLayer(LayerSource):
 # # shape2geometry
 
 
-def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False):
+def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=None):
     if bbox:
-        sbbox = BBox(left=shp.bbox[0], top=shp.bbox[1], width=shp.bbox[2] - shp.bbox[0], height=shp.bbox[3] - shp.bbox[1])
+        if proj:
+            left, top = proj(shp.bbox[0], shp.bbox[1], inverse=True)
+            right, btm = proj(shp.bbox[2], shp.bbox[3], inverse=True)
+        else:
+            left, top, right, btm = shp.bbox
+        sbbox = BBox(left=left, top=top, width=right - left, height=btm - top)
         if not bbox.intersects(sbbox):
             # ignore the shape if it's not within the bbox
             return None
 
     if shp.shapeType in (5, 15):  # multi-polygon
-        geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area)
+        geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area, proj=proj)
     elif shp.shapeType == 3:  # line
-        geom = shape2line(shp)
+        geom = shape2line(shp, proj=proj)
     else:
         raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
     return geom
 
 
-def shape2polygon(shp, ignore_holes=False, min_area=False):
+def shape2polygon(shp, ignore_holes=False, min_area=False, proj=None):
     """
     converts a shapefile polygon to geometry.MultiPolygon
     """
@@ -151,6 +170,8 @@ def shape2polygon(shp, ignore_holes=False, min_area=False):
             # remove z-coordinate from PolygonZ contours (not supported)
             for k in range(len(pts)):
                 pts[k] = pts[k][:2]
+        if proj:
+            project_coords(pts, proj)
         cw = is_clockwise(pts)
         if cw:
             exteriors.append(pts)
@@ -192,7 +213,7 @@ def shape2polygon(shp, ignore_holes=False, min_area=False):
     return poly
 
 
-def shape2line(shp):
+def shape2line(shp, proj=None):
     """ converts a shapefile line to geometry.Line """
     from shapely.geometry import LineString, MultiLineString
 
@@ -201,6 +222,9 @@ def shape2line(shp):
     lines = []
     for j in range(len(parts) - 1):
         pts = shp.points[parts[j]:parts[j + 1]]
+        if proj:
+            print proj
+            project_coords(pts, proj)
         lines.append(pts)
     if len(lines) == 1:
         return LineString(lines[0])
@@ -208,3 +232,10 @@ def shape2line(shp):
         return MultiLineString(lines)
     else:
         raise KartographError('shapefile import failed - no line found')
+
+
+def project_coords(pts, proj):
+    for i in range(len(pts)):
+        x, y = proj(pts[i][0], pts[i][1], inverse=True)
+        pts[i][0] = x
+        pts[i][1] = y
