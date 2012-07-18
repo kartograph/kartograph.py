@@ -146,10 +146,10 @@ def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=Non
 
     if shp.shapeType in (5, 15):  # multi-polygon
         geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area, proj=proj)
-    elif shp.shapeType == 3:  # line
+    elif shp.shapeType in (3, 13):  # line
         geom = shape2line(shp, proj=proj)
     else:
-        raise KartographError('unknown shape type (%d) in shapefile %s' % (shp.shapeType, self.shpSrc))
+        raise KartographError('unknown shape type (%d)' % shp.shapeType)
     return geom
 
 
@@ -222,8 +222,11 @@ def shape2line(shp, proj=None):
     lines = []
     for j in range(len(parts) - 1):
         pts = shp.points[parts[j]:parts[j + 1]]
+        if shp.shapeType == 13:
+            # remove z-coordinate from PolylineZ contours (not supported)
+            for k in range(len(pts)):
+                pts[k] = pts[k][:2]
         if proj:
-            print proj
             project_coords(pts, proj)
         lines.append(pts)
     if len(lines) == 1:

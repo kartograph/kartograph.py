@@ -248,7 +248,7 @@ class Reader:
             (zmin, zmax) = unpack("<2d", f.read(16))
             record.z = _Array('d', unpack("<%sd" % nPoints, f.read(nPoints * 8)))
         # Read m extremes and values
-        if shapeType in (13,18,23,25,28,31):
+        if shapeType in (18,23,25,28,31):
             (mmin, mmax) = unpack("<2d", f.read(16))
             # Measure values less than -10e38 are nodata values according to the spec
             record.m = []
