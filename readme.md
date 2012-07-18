@@ -4,7 +4,7 @@ Kartograph is a Python library that generates SVG maps from ESRI shapefiles. Ple
 
 ### Author
 
-Kartograph was created by [Gregor Aisch](http://github.com/gka/) and is supported by [dpa-infocom](http://www.dpa-info.com/), [Piwik Web Analytics](http://piwik.org) and the [Open Knowledge Foundation](http://okfn.org). 
+Kartograph was created by [Gregor Aisch](http://github.com/gka/) and is supported by [dpa-newslab](http://www.dpa-newslab.com/), [Piwik Web Analytics](http://piwik.org) and the [Open Knowledge Foundation](http://okfn.org). 
 
 ### License
 
