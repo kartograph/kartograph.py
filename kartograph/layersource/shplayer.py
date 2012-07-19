@@ -65,6 +65,10 @@ class ShapefileLayer(LayerSource):
             shp = self.shapes[i] = self.sr.shapeRecord(i).shape
         return shp
 
+    def forget_shape(self, i):
+        if i in self.shapes:
+            self.shapes[i] = None
+
     def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False, charset='utf-8'):
         """
         ### Get features
@@ -119,6 +123,7 @@ class ShapefileLayer(LayerSource):
                 geom = shape2geometry(shp, ignore_holes=ignore_holes, min_area=min_area, bbox=bbox, proj=self.proj)
                 if geom is None:
                     ignored += 1
+                    self.forget_shape(i)
                     continue
 
                 # Finally we construct the map feature and append it to the
@@ -133,6 +138,8 @@ class ShapefileLayer(LayerSource):
 
 
 def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=None):
+    if shp is None:
+        return None
     if bbox:
         if proj:
             left, top = proj(shp.bbox[0], shp.bbox[1], inverse=True)
