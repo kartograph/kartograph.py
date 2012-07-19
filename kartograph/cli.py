@@ -28,6 +28,7 @@ class bcolors:
 parser = argparse.ArgumentParser(prog='kartograph', description='Generates SVG maps from shapefiles')
 
 parser.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
+parser.add_argument('--style', '-s', metavar='FILE', type=argparse.FileType('r'), help='map stylesheet')
 parser.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
 parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
 parser.add_argument('--format', '-f', metavar='svg', help='output format, if not specified it will be guessed from output filename or default to svg')
@@ -51,7 +52,11 @@ def render_map(args):
     try:
 
         # generate the map
-        r = K.generate(cfg, args.output, preview=args.preview, format=format)
+        if args.style:
+            css = args.style.read()
+        else:
+            css = None
+        K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css)
         if not args.output:
             # output to stdout
             # print str(r)

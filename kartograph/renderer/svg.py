@@ -1,6 +1,7 @@
 
 from kartograph.renderer import MapRenderer
 from kartograph.errors import KartographError
+from kartograph.mapstyle import style_diff
 
 # This script contains everything that is needed by Kartograph to finally
 # render the processed maps into SVG files.
@@ -14,11 +15,12 @@ import re
 
 class SvgRenderer(MapRenderer):
 
-    def render(self):
+    def render(self, style):
         """
         The render() method prepares a new empty SVG document and
         stores all the layer features into SVG groups.
         """
+        self.style = style
         self._init_svg_doc()
         self._store_layers_to_svg()
 
@@ -35,7 +37,7 @@ class SvgRenderer(MapRenderer):
             height='%dpx' % h,
             viewBox='0 0 %d %d' % (w, h),
             enable_background='new 0 0 %d %d' % (w, h),
-            style='stroke-linejoin: round; stroke:#000; fill:#f6f3f0;')
+            style='stroke-linejoin: round; stroke:#000; fill: none;')
 
         defs = svg.node('defs', svg.root)
         style = svg.node('style', defs, type='text/css')
@@ -73,6 +75,9 @@ class SvgRenderer(MapRenderer):
                 continue  # ignore empty layers
             g = svg.node('g', svg.root, id=layer.id)
             lbl = layer.options['labeling']
+            layer_css = self.style.getStyle(layer.id)
+            for prop in layer_css:
+                g.setAttribute(prop, layer_css[prop])
             # Create an svg group for labels of this layer
             if lbl is not False:
                 lg = svg.node('g', id=layer.id + '_labels', font__size=lbl['font-size'], font__family=lbl['font-family'], fill=lbl['color'])
@@ -83,28 +88,18 @@ class SvgRenderer(MapRenderer):
                 label_groups.append(lg)
             else:
                 lg = None
+
             for feat in layer.features:
                 node = self._render_feature(feat, layer.options['attributes'], labelOpts=lbl, labelGroup=lg)
                 if node is not None:
-                    if 'styles' in layer.options:
-                        for mode in layer.options['styles']:
-                            if mode[:11] == 'categorized':  # categorized styling
-                                style = layer.options['styles'][mode]
-                                col = style['column']
-                                for val in style['attrs']:
-                                    if col in feat.props and feat.props[col] == val:
-                                        attrs = style['attrs'][val]
-                                        for prop in attrs:
-                                            node.setAttribute(prop, str(attrs[prop]))
+                    feat_css = self.style.getStyle(layer.id, feat.props)
+                    feat_css = style_diff(feat_css, layer_css)
+                    for prop in feat_css:
+                        node.setAttribute(prop, str(feat_css[prop]))
                     g.appendChild(node)
                 else:
                     print "feature.to_svg is None", feat
-            if 'styles' in layer.options:
-                for mode in layer.options['styles']:
-                    if mode == 'single':  # single style for all features
-                        attrs = layer.options['styles'][mode]
-                        for prop in attrs:
-                            g.setAttribute(prop, str(attrs[prop]))
+
         # Finally add label groups on top of all other groups
         for lg in label_groups:
             svg.root.appendChild(lg)

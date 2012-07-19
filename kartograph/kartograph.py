@@ -4,6 +4,7 @@ from shapely.geometry import Polygon, LineString, MultiPolygon
 from errors import *
 from copy import deepcopy
 from renderer import SvgRenderer
+from mapstyle import MapStyle
 from map import Map
 
 
@@ -24,7 +25,7 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, format='svg', preview=None):
+    def generate(self, opts, outfile=None, format='svg', preview=None, stylesheet=None):
         """
         Generates a the map and renders it using the specified output format.
         """
@@ -46,9 +47,11 @@ class Kartograph(object):
         # Check if the format is handled by a renderer.
         format = format.lower()
         if format in _known_renderer:
+            # Create a stylesheet
+            style = MapStyle(stylesheet)
             # Create a renderer instance and render the map.
             renderer = _known_renderer[format](_map)
-            renderer.render()
+            renderer.render(style)
 
             if preview:
                 renderer.preview()
