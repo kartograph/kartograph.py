@@ -1,7 +1,7 @@
 
 from kartograph import Kartograph
 import sys
-from os import mkdir
+from os import mkdir, remove
 from os.path import exists, splitext, basename
 from glob import glob
 from kartograph.options import read_map_descriptor
@@ -28,7 +28,14 @@ for fn in glob('configs/*.*'):
     try:
         cfg = read_map_descriptor(open(fn))
         K = Kartograph()
-        K.generate(cfg, 'results/' + fn_parts[0] + '.svg', preview=False, format='svg')
+        css_url = 'styles/' + fn_parts[0] + '.css'
+        css = None
+        if exists(css_url):
+            css = open(css_url).read()
+        svg_url = 'results/' + fn_parts[0] + '.svg'
+        if exists(svg_url):
+            remove(svg_url)
+        K.generate(cfg, 'results/' + fn_parts[0] + '.svg', preview=False, format='svg', stylesheet=css)
         passed += 1
     except Exception, e:
         import traceback
