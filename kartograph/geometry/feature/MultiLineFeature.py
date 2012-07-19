@@ -37,7 +37,11 @@ class MultiLineFeature(Feature):
         from shapely.geometry import LineString, MultiLineString
         linestrings = []
         for line in lines:
-            linestrings.append(LineString(line))
+            kept = []
+            for pt in line:
+                if not pt.deleted:
+                    kept.append((pt[0], pt[1]))
+            linestrings.append(LineString(kept))
 
         if len(linestrings) > 0:
             self.geometry = MultiLineString(linestrings)
