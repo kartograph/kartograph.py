@@ -1,0 +1,12 @@
+
+#countries[POP_EST<100000000] {
+    fill: #dcc;
+}
+
+#countries[POP_EST>=100000000][POP_EST<1000000000] {
+    fill: #a77;
+}
+
+#countries[POP_EST>=1000000000] {
+    fill: #933;
+}
