@@ -209,6 +209,8 @@ class SvgRenderer(MapRenderer):
                     cont_str += "L"
                 cont_str += fmt % pt
             cont_str += " "
+            if kept[0] == kept[-1]:
+                cont_str += "Z "
             path_str += cont_str
         if path_str == "":
             return None
