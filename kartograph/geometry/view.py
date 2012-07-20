@@ -62,8 +62,7 @@ class View(object):
                 rings = self.project_linear_ring(geom)
                 res += map(LineString, rings)
             elif isinstance(geom, Point):
-                if self._visible(geom.x, geom.y):
-                    res.append(self.project(geom))
+                res.append(self.project((geom.x, geom.y)))
             else:
                 raise KartographError('unknown geometry type %s' % geometry)
 
@@ -82,7 +81,7 @@ class View(object):
                 if len(res) > 1:
                     return MultiPoint(res)
                 else:
-                    return res[0]
+                    return Point(res[0])
 
     def project_polygon(self, polygon):
         ext = self.project_linear_ring(polygon.exterior)
