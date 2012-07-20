@@ -81,7 +81,8 @@ def parse_layers(opts):
     g_id = 0
     s_id = 0
     for layer in opts['layers']:
-        parse_styles(layer)
+        if 'render' not in layer:
+            layer['render'] = True
         if 'src' not in layer and 'special' not in layer:
             raise Error('you need to define the source for your layers')
         if 'src' in layer:
@@ -145,19 +146,6 @@ def parse_layer_labeling(layer):
         lbl['position'] = 'centroid'
     if 'buffer' not in lbl:
         lbl['buffer'] = False
-    else:
-        if 'color' not in lbl['buffer']:
-            lbl['buffer']['color'] = '#fff'
-        if 'opacity' not in lbl['buffer']:
-            lbl['buffer']['opacity'] = 1
-        if 'width' not in lbl['buffer']:
-            lbl['buffer']['width'] = 1
-    if 'font-size' not in lbl:
-        lbl['font-size'] = 12
-    if 'font-family' not in lbl:
-        lbl['font-family'] = 'Helvetica Neue'
-    if 'color' not in lbl:
-        lbl['color'] = '#555'
     if 'key' not in lbl:
         lbl['key'] = False
 
@@ -262,61 +250,6 @@ def parse_layer_graticule(layer):
             layer['longitudes'] += p
 
 
-# valid style configurations
-#
-# styles:
-#   fill: red
-#
-# styles:
-#   single:
-#     fill: red
-#
-# styles:
-#   categorized:
-#     column: highway
-#     attrs:
-#       motorway:
-#         fill: red
-#       primary:
-#         fill: blue
-#
-# (default to red, all primary roads in blue)
-# styles:
-#   single:
-#     fill: red
-#   categorized:
-#     column: highway
-#     attrs:
-#       primary:
-#         fill: blue
-#
-# (multiple categorization)
-# styles:
-#   categorized-0:
-#     column: highway
-#     attrs:
-#       primary:
-#         fill: blue
-#   categorized-1:
-#     column: maxspeed
-#     attrs:
-#       80:
-#         stroke: white
-def parse_styles(layer):
-    if 'styles' not in layer:
-        layer['styles'] = {}
-    styles = layer['styles']
-    if len(styles.keys()) > 0:
-        key = styles.keys()[0]
-        if key != 'single' and key[:11] != 'categorized':
-            props = deepcopy(styles)
-            styles = layer['styles'] = dict(single=props)
-        for key in styles.keys():
-            if key[:11] == 'categorized':
-                if 'column' not in styles[key]:
-                    raise Error('column missing for categorized styling')
-
-
 def _xfrange(start, stop, step):
     while (step > 0 and start < stop) or (step < 0 and start > step):
         yield start
@@ -412,3 +345,7 @@ def parse_export(opts):
         exp["round"] = int(exp["round"])
     if "crop-to-view" not in exp:
         exp['crop-to-view'] = True
+    if "scalebar" not in exp:
+        exp['scalebar'] = False
+    elif exp['scalebar'] is True:
+        exp['scalebar'] = dict()
