@@ -77,7 +77,7 @@ class Proj(object):
                 if len(res) > 1:
                     return MultiPoint(res)
                 else:
-                    return Point(res[0][0], res[0][1])
+                    return Point(res[0].x, res[0].y)
 
     def plot_polygon(self, polygon):
         ext = self.plot_linear_ring(polygon.exterior, truncate=True)
