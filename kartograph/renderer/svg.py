@@ -1,7 +1,7 @@
 
 from kartograph.renderer import MapRenderer
 from kartograph.errors import KartographError
-from kartograph.mapstyle import style_diff
+from kartograph.mapstyle import style_diff, remove_unit
 
 # This script contains everything that is needed by Kartograph to finally
 # render the processed maps into SVG files.
@@ -23,6 +23,8 @@ class SvgRenderer(MapRenderer):
         self.style = style
         self._init_svg_doc()
         self._store_layers_to_svg()
+        if self.map.options['export']['scalebar'] != False:
+            self._render_scale_bar(self.map.options['export']['scalebar'])
 
     def _init_svg_doc(self):
         # Load width and height of the map view
@@ -54,63 +56,12 @@ class SvgRenderer(MapRenderer):
             y=round(self.map.src_bbox.top, 2),
             w=round(self.map.src_bbox.width, 2),
             h=round(self.map.src_bbox.height, 2))
-
-        ll = [-180, -90, 180, 90]
-        if self.map.options['bounds']['mode'] == "bbox":
-            ll = self.map.options['bounds']['data']
-        svg.node('llbbox', view,
-            lon0=ll[0], lon1=ll[2],
-            lat0=ll[1], lat1=ll[3])
         self.svg = svg
 
-    def _store_layers_to_svg(self):
-        """
-        store features in svg
-        """
-        svg = self.svg
-        label_groups = []
-        for layer in self.map.layers:
-            if len(layer.features) == 0:
-                print "ignoring empty layer", layer.id
-                continue  # ignore empty layers
-            g = svg.node('g', svg.root, id=layer.id)
-            lbl = layer.options['labeling']
-            layer_css = self.style.getStyle(layer.id)
-            for prop in layer_css:
-                g.setAttribute(prop, layer_css[prop])
-            # Create an svg group for labels of this layer
-            if lbl is not False:
-                lg = svg.node('g', id=layer.id + '_labels', font__size=lbl['font-size'], font__family=lbl['font-family'], fill=lbl['color'])
-                if lbl['buffer'] is not False:
-                    lg.setAttribute('stroke-width',  '%fpx' % lbl['buffer']['width'])
-                    lg.setAttribute('stroke', lbl['buffer']['color'])
-                    lg.setAttribute('stroke-opacity', str(lbl['buffer']['opacity']))
-                label_groups.append(lg)
-            else:
-                lg = None
-
-            for feat in layer.features:
-                node = self._render_feature(feat, layer.options['attributes'], labelOpts=lbl, labelGroup=lg)
-                if node is not None:
-                    feat_css = self.style.getStyle(layer.id, feat.props)
-                    feat_css = style_diff(feat_css, layer_css)
-                    for prop in feat_css:
-                        node.setAttribute(prop, str(feat_css[prop]))
-                    g.appendChild(node)
-                else:
-                    print "feature.to_svg is None", feat
-
-        # Finally add label groups on top of all other groups
-        for lg in label_groups:
-            svg.root.appendChild(lg)
-
-    def _render_feature(self, feature, attributes=[], labelOpts=False, labelGroup=None):
-        node = self._render_geometry(feature.geometry, labelOpts, labelGroup)
+    def _render_feature(self, feature, attributes=[], labelOpts=False):
+        node = self._render_geometry(feature.geometry)
         if node is None:
             return None
-
-        if labelOpts is not False:
-            self._render_label(feature, labelOpts, labelGroup)
 
         for cfg in attributes:
             if 'src' in cfg:
@@ -139,18 +90,20 @@ class SvgRenderer(MapRenderer):
             node.setAttribute('fill', self.props['__color__'])
         return node
 
-    def _render_geometry(self, geometry, labelOpts, labelGroup):
-        from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString
+    def _render_geometry(self, geometry):
+        from shapely.geometry import Polygon, MultiPolygon, LineString, MultiLineString, Point
         if geometry is None:
             return
         if isinstance(geometry, (Polygon, MultiPolygon)):
-            return self._render_polygon(geometry, labelOpts, labelGroup)
+            return self._render_polygon(geometry)
         elif isinstance(geometry, (LineString, MultiLineString)):
-            return self._render_line(geometry, labelOpts, labelGroup)
+            return self._render_line(geometry)
+        elif isinstance(geometry, (Point)):
+            return self._render_point(geometry)
         else:
             raise KartographError('svg renderer doesn\'t know how to handle ' + str(type(geometry)))
 
-    def _render_polygon(self, geometry, labelOpts, labelGroup):
+    def _render_polygon(self, geometry):
         """ constructs a svg representation of a polygon """
         _round = self.map.options['export']['round']
         path_str = ""
@@ -184,7 +137,7 @@ class SvgRenderer(MapRenderer):
         path = self.svg.node('path', d=path_str)
         return path
 
-    def _render_line(self, geometry, labelOpts, labelGroup):
+    def _render_line(self, geometry):
         """ constructs a svg representation of this line """
         _round = self.map.options['export']['round']
         path_str = ""
@@ -217,20 +170,126 @@ class SvgRenderer(MapRenderer):
         path = self.svg.node('path', d=path_str)
         return path
 
-    def _render_label(self, feature, labelOpts, labelGroup):
-        if feature.geometry.area < 20:
-            return
+
+        ll = [-180, -90, 180, 90]
+        if self.map.options['bounds']['mode'] == "bbox":
+            ll = self.map.options['bounds']['data']
+        svg.node('llbbox', view,
+            lon0=ll[0], lon1=ll[2],
+            lat0=ll[1], lat1=ll[3])
+        self.svg = svg
+
+    def _store_layers_to_svg(self):
+        """
+        store features in svg
+        """
+        svg = self.svg
+        # label_groups = []
+        for layer in self.map.layers:
+            if len(layer.features) == 0:
+                print "ignoring empty layer", layer.id
+                continue  # ignore empty layers
+            if layer.options['render']:
+                g = svg.node('g', svg.root, id=layer.id)
+                layer_css = self.style.applyStyle(g, layer.id)
+
+            # Create an svg group for labels of this layer
+            lbl = layer.options['labeling']
+            if lbl is not False:
+                if lbl['buffer'] is not False:
+                    lgbuf = svg.node('g', svg.root, id=layer.id + '-label-buffer')
+                    self.style.applyStyle(lgbuf, layer.id + '-label')
+                    self.style.applyStyle(lgbuf, layer.id + '-label-buffer')
+                    lbl['lg-buffer'] = lgbuf
+                lg = svg.node('g', svg.root, id=layer.id + '-label')
+                self.style.applyStyle(lg, layer.id + '-label')
+                lbl['lg'] = lg
+            else:
+                lg = None
+
+            for feat in layer.features:
+                if layer.options['render']:
+                    node = self._render_feature(feat, layer.options['attributes'])
+                    if node is not None:
+                        feat_css = self.style.getStyle(layer.id, feat.props)
+                        feat_css = style_diff(feat_css, layer_css)
+                        for prop in feat_css:
+                            node.setAttribute(prop, str(feat_css[prop]))
+                        g.appendChild(node)
+                    else:
+                        print "feature.to_svg is None", feat
+                if lbl is not False:
+                    self._render_label(feat, lbl)
+
+        # Finally add label groups on top of all other groups
+        # for lg in label_groups:
+        #    svg.root.appendChild(lg)
+
+    def _render_point(self, geometry):
+        dot = self.svg.node('circle', cx=geometry.x, cy=geometry.y, r=1)
+        return dot
+
+    def _render_label(self, feature, labelOpts):
+        #if feature.geometry.area < 20:
+        #    return
         cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        try:
+            cy += remove_unit(labelOpts['lg'].getAttribute('font-size')) * 0.5
+        except:
+            pass
         key = labelOpts['key']
         if not key:
             key = feature.props.keys()[0]
+        if key not in feature.props:
+            return
+        if 'min-area' in labelOpts and feature.geometry.area < float(labelOpts['min-area']):
+            return
         text = feature.props[key]
         if labelOpts['buffer'] is not False:
-            lblBuf = self.svg.node('text', labelGroup, x=cx, y=cy - labelOpts['font-size'] * 0.5, text__anchor='middle')
+            lblBuf = self.svg.node('text', labelOpts['lg-buffer'], x=cx, y=cy, text__anchor='middle')
             self.svg.cdata(text, lblBuf)
 
-        lbl = self.svg.node('text', labelGroup, stroke='none', x=cx, y=cy - labelOpts['font-size'] * 0.5, text__anchor='middle')
+        lbl = self.svg.node('text', labelOpts['lg'], stroke='none', x=cx, y=cy, text__anchor='middle')
         self.svg.cdata(text, lbl)
+
+    def _render_scale_bar(self, opts):
+
+        def format(m):
+            if m > 1000:
+                return (int(m / 1000), 'km')
+            return (m, 'm')
+
+        svg = self.svg
+        meters, pixel = self.map.scale_bar_width()
+        if 'align' not in opts:
+            opts['align'] = 'bl'  # default to bottom left
+        if 'offset' not in opts:
+            opts['offset'] = 20  # 20px offset
+        g = svg.node('g', svg.root, id='scale-bar', shape__rendering='crispEdges',  text__anchor='middle', stroke='none', fill='#000', font__size=13)
+        left = (opts['offset'], self.map.view.width - pixel - opts['offset'])[opts['align'][1] != 'l']
+        top = (opts['offset'] + 20, self.map.view.height - opts['offset'])[opts['align'][0] != 't']
+        dy = -6
+        pts1 = (left, top + dy, left, top, left + pixel, top, left + pixel, top + dy)
+        pts2 = (left + pixel * 0.5, top + dy, left + pixel * 0.5, top)
+
+        def path(pts, stroke, strokeWidth):
+            d = ('M%d,%d' + ('L%d,%d' * (len(pts[2:]) / 2))) % pts
+            svg.node('path', g, d=d, fill='none', stroke=stroke, stroke__width=strokeWidth)
+
+        path(pts1, '#fff', 5)
+        path(pts2, '#fff', 5)
+        path(pts1, '#000', 1)
+        path(pts2, '#000', 1)
+
+        def lbl(txt, x=0, y=0):
+            lbl = svg.node('text', g, x=x, y=y, stroke='#fff', stroke__width='4px')
+            svg.cdata(txt, lbl)
+            lbl = svg.node('text', g, x=x, y=y)
+            svg.cdata(txt, lbl)
+
+        lbl('%d%s' % format(meters), x=int(left + pixel), y=(top + dy - 5))
+        lbl('%d' % format(meters * 0.5)[0], x=int(left + pixel * 0.5), y=(top + dy - 5))
+        lbl('0', x=int(left), y=(top + dy - 5))
 
     def write(self, filename):
         self.svg.write(filename)
