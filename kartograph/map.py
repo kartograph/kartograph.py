@@ -311,14 +311,16 @@ class Map(object):
         for layer in self.layers:
             if layer.options['simplify'] is not False:
                 for feature in layer.features:
-                    feature.compute_topology(point_store, layer.options['unify-precision'])
+                    if feature.is_simplifyable():
+                        feature.compute_topology(point_store, layer.options['unify-precision'])
 
         # Now we break features into line segments, which makes them
         # easier to simplify.
         for layer in self.layers:
             if layer.options['simplify'] is not False:
                 for feature in layer.features:
-                    feature.break_into_lines()
+                    if feature.is_simplifyable():
+                        feature.break_into_lines()
 
         # Finally, apply the chosen line simplification algorithm.
         total = 0
@@ -326,15 +328,16 @@ class Map(object):
         for layer in self.layers:
             if layer.options['simplify'] is not False:
                 for feature in layer.features:
-                    lines = feature.break_into_lines()
-                    lines = simplify_lines(lines, layer.options['simplify']['method'], layer.options['simplify']['tolerance'])
-                    for line in lines:
-                        total += len(line)
-                        for pt in line:
-                            if not pt.deleted:
-                                kept += 1
-                    # ..and restore the geometries from the simplified line segments.
-                    feature.restore_geometry(lines, layer.options['filter-islands'])
+                    if feature.is_simplifyable():
+                        lines = feature.break_into_lines()
+                        lines = simplify_lines(lines, layer.options['simplify']['method'], layer.options['simplify']['tolerance'])
+                        for line in lines:
+                            total += len(line)
+                            for pt in line:
+                                if not pt.deleted:
+                                    kept += 1
+                        # ..and restore the geometries from the simplified line segments.
+                        feature.restore_geometry(lines, layer.options['filter-islands'])
         return (total, kept)
 
     def _crop_layers_to_view(self):
@@ -473,3 +476,24 @@ class Map(object):
                             buffer_polygons = 0
                         res += join_features(groupFeatures[g_id], props, buf=buffer_polygons)
                 layer.features = res
+
+    def compute_map_scale(me):
+        """
+        computes the width of the map (at the lower boundary) in projection units (typically meters)
+        """
+        p0 = (0, me.view.height)
+        p1 = (me.view.width, p0[1])
+        p0 = me.view.project_inverse(p0)
+        p1 = me.view.project_inverse(p1)
+        from math import sqrt
+        return sqrt((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2) / me.view.width
+
+    def scale_bar_width(me):
+        from math import log
+        scale = me.compute_map_scale()
+        w = (me.view.width * 0.2) * scale
+        exp = int(log(w, 10))
+        nice_w = round(w, -exp)
+        bar_w = nice_w / scale
+        return (nice_w, bar_w)
+
