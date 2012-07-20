@@ -133,6 +133,9 @@ class MultiPolygonFeature(Feature):
         else:
             self.geometry = None
 
+    def is_simplifyable(self):
+        return True
+
     @property
     def _geoms(self):
         """ returns a list of geoms """

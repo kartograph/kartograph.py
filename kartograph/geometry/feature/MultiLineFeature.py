@@ -1,6 +1,5 @@
 from Feature import Feature
 from kartograph.simplify.unify import unify_rings
-import shapely.wkt
 
 
 class MultiLineFeature(Feature):
@@ -12,6 +11,9 @@ class MultiLineFeature(Feature):
     def project_geometry(self, proj):
         """ project the geometry """
         self.geometry = proj.plot(self.geometry)
+
+    def is_simplifyable(self):
+        return True
 
     def compute_topology(self, point_store, precision=None):
         """
