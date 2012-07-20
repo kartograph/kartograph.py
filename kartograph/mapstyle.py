@@ -33,6 +33,12 @@ class MapStyle(object):
                     attrs[decl.name] = prop
         return attrs
 
+    def applyStyle(self, node, layer_id, fprops=dict()):
+        style = self.getStyle(layer_id, fprops)
+        for key in style:
+            node.setAttribute(key, style[key])
+        return style
+
 
 def _checkRule(layer_id, fprops, rule):
     parts = [[]]
@@ -101,6 +107,15 @@ def style_diff(d1, d2):
         if key not in d2 or d2[key] != d1[key]:
             res[key] = d1[key]
     return res
+
+
+def remove_unit(val):
+    units = ('px', 'pt')
+    for unit in units:
+        if val[-len(unit):] == unit:
+            return float(val[:-len(unit)])
+    return 0
+
 
 if __name__ == "__main__":
     css = '''
