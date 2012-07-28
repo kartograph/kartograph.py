@@ -21,6 +21,12 @@ class MapLayer(object):
         self.options = options
         self.map = _map
         self.cache = cache
+        if 'class' not in options:
+            self.classes = []
+        elif isinstance(options['class'], basestring):
+            self.classes = options['class'].split(' ')
+        elif isinstance(options['class'], list):
+            self.classes = options['class']
         # Make sure that the layer id is unique within the map.
         while self.id in self.map.layersById:
             self.id += "_"

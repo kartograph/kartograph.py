@@ -11,7 +11,7 @@ class MapStyle(object):
         else:
             self.css = None
 
-    def getStyle(self, layer_id, fprops=dict()):
+    def getStyle(self, layer_id, layer_classes=[], fprops=dict()):
         """
         Returns a dictionary of style rules for a given feature.
         """
@@ -20,7 +20,7 @@ class MapStyle(object):
         attrs = dict()
         for rule in self.css.rules:
             # Find out whether this rule matches
-            if _checkRule(layer_id, fprops, rule):
+            if _checkRule(layer_id, layer_classes, fprops, rule):
                 for decl in rule.declarations:
                     prop = ''
                     for val in decl.value:
@@ -33,14 +33,14 @@ class MapStyle(object):
                     attrs[decl.name] = prop
         return attrs
 
-    def applyStyle(self, node, layer_id, fprops=dict()):
-        style = self.getStyle(layer_id, fprops)
+    def applyStyle(self, node, layer_id, layer_classes=[], fprops=dict()):
+        style = self.getStyle(layer_id, layer_classes, fprops)
         for key in style:
             node.setAttribute(key, style[key])
         return style
 
 
-def _checkRule(layer_id, fprops, rule):
+def _checkRule(layer_id, layer_classes, fprops, rule):
     parts = [[]]
     k = 0
     for sel in rule.selector:
@@ -53,14 +53,16 @@ def _checkRule(layer_id, fprops, rule):
             parts.append([])
             continue
         parts[k].append(sel)
+
     for p in parts:
         if len(p) > 0:
-            if p[0].type == 'HASH' and p[0].value[1:] == layer_id or p[0].type == 'DELIM' and p[0].value == '*':
+            o = _checkIdAndClass(p, layer_id, layer_classes)
+            if o > 0:
                 if len(p) == 1:
                     return True
                 else:
                     match = True
-                    for r in p[1:]:
+                    for r in p[o:]:
                         if r.type == '[' and r.content[0].type == 'IDENT' and r.content[len(r.content) - 1].type in ('IDENT', 'INTEGER'):
                             key = r.content[0].value
                             val = r.content[len(r.content) - 1].value
@@ -101,6 +103,27 @@ def _checkRule(layer_id, fprops, rule):
                         return True
 
 
+def _checkIdAndClass(part, layer_id, layer_classes):
+    """
+    checks wether the part of a css rule matches a given layer id
+    and/or a list of classes
+    """
+    # Match layer id
+    if part[0].type == 'HASH' and part[0].value[1:] == layer_id:
+        return 1
+    # Match wildcard *
+    if part[0].type == 'DELIM' and part[0].value == '*':
+        return 1
+    # Match class name
+    if part[0].type == 'DELIM' and part[0].value == '.':
+        # We only test the first class, so .foo.bar would match
+        # any layer with the class 'foo' regardless of it also has
+        # the class 'bar'
+        if part[1].type == 'IDENT' and part[1].value in layer_classes:
+            return 2
+    return 0
+
+
 def style_diff(d1, d2):
     res = dict()
     for key in d1:
@@ -114,7 +137,7 @@ def remove_unit(val):
     for unit in units:
         if val[-len(unit):] == unit:
             return float(val[:-len(unit)])
-    return 0
+    return val
 
 
 if __name__ == "__main__":
