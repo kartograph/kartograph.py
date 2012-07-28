@@ -17,7 +17,10 @@ class PostGISLayer(LayerSource):
         """
         Initialize database connection
         """
-        import psycopg2
+        try:
+            import psycopg2
+        except ImportError:
+            raise KartographError('You need to install psycopg2 (and PostgreSQL) if you want to render maps from PostGIS.\ne.g.\n    pip install psycopg2')
         self.conn = psycopg2.connect(src)
         self.query = query
         self.query_cache = dict()

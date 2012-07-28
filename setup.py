@@ -26,7 +26,7 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["shapely", "pyshp", "pyyaml", "pykml", "pyproj", "psycopg2"],
+    install_requires=["shapely", "pyshp", "pyyaml", "pykml", "pyproj"],
     tests_require=[],
     entry_points={
         'console_scripts': [
