@@ -16,6 +16,10 @@ def filter_record(filt, record):
             res = False
             for sfilt in filt['or']:
                 res = res or filter_record(sfilt, record)
+        else:
+            res = True
+            for key in filt:
+                res = res and filter_record([key, '=', filt[key]], record)
     elif isinstance(filt, list):
         res = filter_single(filt, record)
     return res
