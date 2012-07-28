@@ -192,6 +192,7 @@ class Map(object):
                     bbox.join(fbbox)
                 # Save the unprojected bounding box for later to
                 # determine what features can be skipped.
+                ubbox.inflate(ubbox.width * opts['bounds']['padding'])
                 self._unprojected_bounds = ubbox
             else:
                 raise KartographError('no features found for calculating the map bounds')
@@ -493,7 +494,6 @@ class Map(object):
         scale = me.compute_map_scale()
         w = (me.view.width * 0.2) * scale
         exp = int(log(w, 10))
-        nice_w = round(w, -exp)
+        nice_w = round(w, -1 - exp)
         bar_w = nice_w / scale
         return (nice_w, bar_w)
-

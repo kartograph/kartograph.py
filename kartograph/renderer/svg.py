@@ -170,15 +170,6 @@ class SvgRenderer(MapRenderer):
         path = self.svg.node('path', d=path_str)
         return path
 
-
-        ll = [-180, -90, 180, 90]
-        if self.map.options['bounds']['mode'] == "bbox":
-            ll = self.map.options['bounds']['data']
-        svg.node('llbbox', view,
-            lon0=ll[0], lon1=ll[2],
-            lat0=ll[1], lat1=ll[3])
-        self.svg = svg
-
     def _store_layers_to_svg(self):
         """
         store features in svg
@@ -191,18 +182,19 @@ class SvgRenderer(MapRenderer):
                 continue  # ignore empty layers
             if layer.options['render']:
                 g = svg.node('g', svg.root, id=layer.id)
-                layer_css = self.style.applyStyle(g, layer.id)
+                g.setAttribute('class', ' '.join(layer.classes))
+                layer_css = self.style.applyStyle(g, layer.id, layer.classes)
 
             # Create an svg group for labels of this layer
             lbl = layer.options['labeling']
             if lbl is not False:
                 if lbl['buffer'] is not False:
                     lgbuf = svg.node('g', svg.root, id=layer.id + '-label-buffer')
-                    self.style.applyStyle(lgbuf, layer.id + '-label')
-                    self.style.applyStyle(lgbuf, layer.id + '-label-buffer')
+                    self.style.applyStyle(lgbuf, layer.id + '-label', ['label'])
+                    self.style.applyStyle(lgbuf, layer.id + '-label-buffer', ['label-buffer'])
                     lbl['lg-buffer'] = lgbuf
-                lg = svg.node('g', svg.root, id=layer.id + '-label')
-                self.style.applyStyle(lg, layer.id + '-label')
+                lg = svg.node('g', svg.root, id=layer.id + '-label', stroke='none')
+                self.style.applyStyle(lg, layer.id + '-label', ['label'])
                 lbl['lg'] = lg
             else:
                 lg = None
@@ -211,7 +203,7 @@ class SvgRenderer(MapRenderer):
                 if layer.options['render']:
                     node = self._render_feature(feat, layer.options['attributes'])
                     if node is not None:
-                        feat_css = self.style.getStyle(layer.id, feat.props)
+                        feat_css = self.style.getStyle(layer.id, layer.classes, feat.props)
                         feat_css = style_diff(feat_css, layer_css)
                         for prop in feat_css:
                             node.setAttribute(prop, str(feat_css[prop]))
@@ -233,10 +225,6 @@ class SvgRenderer(MapRenderer):
         #if feature.geometry.area < 20:
         #    return
         cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
-        try:
-            cy += remove_unit(labelOpts['lg'].getAttribute('font-size')) * 0.5
-        except:
-            pass
         key = labelOpts['key']
         if not key:
             key = feature.props.keys()[0]
@@ -246,18 +234,42 @@ class SvgRenderer(MapRenderer):
             return
         text = feature.props[key]
         if labelOpts['buffer'] is not False:
-            lblBuf = self.svg.node('text', labelOpts['lg-buffer'], x=cx, y=cy, text__anchor='middle')
-            self.svg.cdata(text, lblBuf)
+            self._label(text, cx, cy, labelOpts['lg-buffer'], labelOpts)
 
-        lbl = self.svg.node('text', labelOpts['lg'], stroke='none', x=cx, y=cy, text__anchor='middle')
-        self.svg.cdata(text, lbl)
+        self._label(text, cx, cy, labelOpts['lg'], labelOpts)
+
+    def _label(self, text, x, y, group, opts):
+        # split text into ines
+        if 'split-chars' not in opts:
+            lines = [text]
+        else:
+            if 'split-at' not in opts:
+                opts['split-at'] = 10
+            lines = split_at(text, opts['split-chars'], opts['split-at'])
+        lh = remove_unit(group.getAttribute('font-size'))
+        if lh is None:
+            lh = 12
+        line_height = remove_unit(group.getAttribute('line-height'))
+        if line_height:
+            lh = line_height
+        h = len(lines) * lh
+        lbl = self.svg.node('text', group, y=y - h * 0.5, text__anchor='middle')
+        yo = 0
+        for line in lines:
+            tspan = self.svg.node('tspan', lbl, x=x, dy=yo)
+            yo += lh
+            self.svg.cdata(line, tspan)
 
     def _render_scale_bar(self, opts):
 
         def format(m):
+
             if m > 1000:
-                return (int(m / 1000), 'km')
-            return (m, 'm')
+                if m % 1000 == 0:
+                    return (str(int(m / 1000)), 'km')
+                else:
+                    return (str(round(m / 1000, 1)), 'km')
+            return (str(m), 'm')
 
         svg = self.svg
         meters, pixel = self.map.scale_bar_width()
@@ -268,18 +280,23 @@ class SvgRenderer(MapRenderer):
         g = svg.node('g', svg.root, id='scale-bar', shape__rendering='crispEdges',  text__anchor='middle', stroke='none', fill='#000', font__size=13)
         left = (opts['offset'], self.map.view.width - pixel - opts['offset'])[opts['align'][1] != 'l']
         top = (opts['offset'] + 20, self.map.view.height - opts['offset'])[opts['align'][0] != 't']
-        dy = -6
-        pts1 = (left, top + dy, left, top, left + pixel, top, left + pixel, top + dy)
-        pts2 = (left + pixel * 0.5, top + dy, left + pixel * 0.5, top)
+        dy = -8
+        paths = []
+        paths.append((left, top + dy, left, top, left + pixel, top, left + pixel, top + dy))
+        for i in (1.25, 2.5, 3.75, 5, 6.25, 7.5, 8.75):
+            _dy = dy
+            if i != 5:
+                _dy *= 0.5
+            paths.append((left + pixel * i / 10.0, top + dy, left + pixel * i / 10.0, top))
 
         def path(pts, stroke, strokeWidth):
             d = ('M%d,%d' + ('L%d,%d' * (len(pts[2:]) / 2))) % pts
             svg.node('path', g, d=d, fill='none', stroke=stroke, stroke__width=strokeWidth)
 
-        path(pts1, '#fff', 5)
-        path(pts2, '#fff', 5)
-        path(pts1, '#000', 1)
-        path(pts2, '#000', 1)
+        for pts in paths:
+            path(pts, '#fff', 5)
+        for pts in paths:
+            path(pts, '#000', 1)
 
         def lbl(txt, x=0, y=0):
             lbl = svg.node('text', g, x=x, y=y, stroke='#fff', stroke__width='4px')
@@ -287,9 +304,10 @@ class SvgRenderer(MapRenderer):
             lbl = svg.node('text', g, x=x, y=y)
             svg.cdata(txt, lbl)
 
-        lbl('%d%s' % format(meters), x=int(left + pixel), y=(top + dy - 5))
-        lbl('%d' % format(meters * 0.5)[0], x=int(left + pixel * 0.5), y=(top + dy - 5))
-        lbl('0', x=int(left), y=(top + dy - 5))
+        lbl('%s%s' % format(meters), x=int(left + pixel), y=(top + dy - 7))
+        lbl('%s' % format(meters * 0.5)[0], x=int(left + pixel * 0.5), y=(top + dy - 7))
+        lbl('%s' % format(meters * 0.25)[0], x=int(left + pixel * 0.25), y=(top + dy - 7))
+        lbl('0', x=int(left), y=(top + dy - 7))
 
     def write(self, filename):
         self.svg.write(filename)
@@ -300,6 +318,29 @@ class SvgRenderer(MapRenderer):
     def __str__(self):
         return self.svg.tostring()
 
+
+def split_at(text, chars, minLen):
+    res = [text]
+    for char in chars:
+        tmp = []
+        for text in res:
+            parts = text.split(char)
+            for p in range(len(parts) - 1):
+                if char != '(':
+                    parts[p] += char
+                else:
+                    parts[p + 1] = char + parts[p + 1]
+            tmp += parts
+        res = tmp
+    o = []
+    keep = ''
+    for token in res:
+        if len(keep) > minLen:
+            o.append(keep)
+            keep = ''
+        keep += token
+    o.append(keep)
+    return o
 
 # SvgDocument
 # -----------
