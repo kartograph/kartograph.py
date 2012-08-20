@@ -20,7 +20,7 @@ def filter_record(filt, record):
             res = True
             for key in filt:
                 res = res and filter_record([key, '=', filt[key]], record)
-    elif isinstance(filt, list):
+    elif isinstance(filt, (list, tuple)):
         res = filter_single(filt, record)
     return res
 
