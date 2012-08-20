@@ -86,8 +86,6 @@ class SvgRenderer(MapRenderer):
                     if feature.props[src] == cfg['equals'][i]:
                         node.setAttribute('data-' + tgt, cfg['to'][i])
 
-        if '__color__' in feature.props:
-            node.setAttribute('fill', self.props['__color__'])
         return node
 
     def _render_geometry(self, geometry):
