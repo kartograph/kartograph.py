@@ -67,16 +67,19 @@ class ShapefileLayer(LayerSource):
 
     def forget_shape(self, i):
         if i in self.shapes:
-            self.shapes[i] = None
+            self.shapes.pop(i)
 
-    def get_features(self, attr=None, filter=None, bbox=None, verbose=False, ignore_holes=False, min_area=False, charset='utf-8'):
+    def get_features(self, attr=None, filter=None, bbox=None, ignore_holes=False, min_area=False, charset='utf-8'):
         """
         ### Get features
         """
         res = []
         # We will try these encodings..
-        try_encodings = ('utf-8', 'latin-1', 'iso-8859-2')
-        tried_encodings = [charset]
+        known_encodings = ['utf-8', 'latin-1', 'iso-8859-2', 'iso-8859-15']
+        try_encodings = [charset]
+        for enc in known_encodings:
+            if enc != charset:
+                try_encodings.append(enc)
         # Eventually we convert the bbox list into a proper BBox instance
         if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
@@ -92,26 +95,18 @@ class ShapefileLayer(LayerSource):
                 # ..we try to decode the attributes (shapefile charsets are arbitrary)
                 for j in range(len(self.attributes)):
                     val = self.recs[i][j]
+                    decoded = False
                     if isinstance(val, str):
-                        try:
-                            val = val.decode(charset)
-                        except:
-                            if verbose:
-                                print 'warning: could not decode "%s" to %s' % (val, charset)
-                            next_guess = False
-                            for enc in try_encodings:
-                                if enc not in tried_encodings:
-                                    next_guess = enc
-                                    tried_encodings.append(enc)
-                                    break
-                            if next_guess:
+                        for enc in try_encodings:
+                            try:
+                                val = val.decode(enc)
+                                decoded = True
+                                break
+                            except:
                                 if verbose:
-                                    print 'trying %s now..' % next_guess
-                                charset = next_guess
-                                j -= 1
-                                continue
-                            else:
-                                raise KartographError('having problems to decode the input data "%s"' % val)
+                                    print 'warning: could not decode "%s" to %s' % (val, enc)
+                        if not decoded:
+                            raise KartographError('having problems to decode the input data "%s"' % val)
                     if isinstance(val, (str, unicode)):
                         val = val.strip()
                     props[self.attributes[j]] = val
