@@ -26,11 +26,14 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["shapely", "pyshp", "pyyaml", "pykml", "pyproj"],
+    install_requires=["gdal", "shapely>=1.0.14", "pyshp", "pyyaml", "pykml", "pyproj", "lxml"],
     tests_require=[],
     entry_points={
         'console_scripts': [
              'kartograph = kartograph.cli:main'
         ]
+    },
+    extras_require={
+        'postgis':  ["psycopg2"]
     }
 )
