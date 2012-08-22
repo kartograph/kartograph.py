@@ -1,7 +1,4 @@
-
-from kartograph.errors import KartographError
 from shapely.geos import TopologicalError
-import re
 
 verbose = False
 
