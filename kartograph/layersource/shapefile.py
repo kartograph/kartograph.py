@@ -373,7 +373,10 @@ class Reader:
                 if value == b(''):
                     value = 0
                 elif deci:
-                    value = float(value)
+                    try:
+                        value = float(value)
+                    except:
+                        value = 0
                 else:
                     value = int(value)
             elif typ == b('D'):
