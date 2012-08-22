@@ -7,10 +7,16 @@ helper methods for validating options dictionary
 import os.path
 import proj
 import errors
-from copy import deepcopy
-
 
 Error = errors.KartographError
+
+try:
+    # included in standard lib from Python 2.7
+    from collections import OrderedDict
+except ImportError:
+    # try importing the backported drop-in replacement
+    # it's available on PyPI
+    from ordereddict import OrderedDict
 
 
 def is_str(s):
@@ -20,18 +26,20 @@ def is_str(s):
 def read_map_descriptor(f):
     content = f.read()
     ext = os.path.splitext(f.name)[1].lower()
+
     if ext == '.json':
         import json
         try:
-            cfg = json.loads(content)
+            cfg = json.loads(content, object_pairs_hook=OrderedDict)
         except Exception, e:
             raise Error('parsing of json map configuration failed.\n' + e)
         else:
             return cfg
     elif ext in ('.yaml', '.yml'):
         import yaml
+        from yaml_ordered_dict import OrderedDictYAMLLoader
         try:
-            cfg = yaml.load(content)
+            cfg = yaml.load(content, OrderedDictYAMLLoader)
         except Exception, e:
             raise Error('parsing of yaml map configuration failed.\n' + e)
         else:
@@ -80,6 +88,17 @@ def parse_layers(opts):
     l_id = 0
     g_id = 0
     s_id = 0
+    layers = []
+    if isinstance(opts['layers'], list):
+        for layer in opts['layers']:
+            layers.append(layer)
+    elif isinstance(opts['layers'], OrderedDict):
+        for layer_id in opts['layers']:
+            layer = opts['layers'][layer_id]
+            layer['id'] = layer_id
+            layers.append(layer)
+    opts['layers'] = layers
+
     for layer in opts['layers']:
         if 'render' not in layer:
             layer['render'] = True
@@ -102,8 +121,6 @@ def parse_layers(opts):
                     if g_id > 0:
                         layer['id'] += '_' + str(g_id)
                     g_id += 1
-                if 'fill' not in layer['styles']:
-                    layer['styles']['fill'] = 'None'
                 parse_layer_graticule(layer)
             elif layer['special'] == 'sea':
                 if 'id' not in layer:

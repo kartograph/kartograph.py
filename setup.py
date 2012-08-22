@@ -26,7 +26,7 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["gdal", "shapely>=1.0.14", "pyshp", "pyyaml", "pykml", "pyproj", "lxml"],
+    install_requires=["gdal", "shapely>=1.0.14", "pyshp", "pyyaml", "pykml", "pyproj", "lxml", "ordereddict"],
     tests_require=[],
     entry_points={
         'console_scripts': [
