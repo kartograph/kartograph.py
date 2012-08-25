@@ -43,7 +43,7 @@ class SvgRenderer(MapRenderer):
 
         defs = svg.node('defs', svg.root)
         style = svg.node('style', defs, type='text/css')
-        css = 'path { fill-rule: evenodd; }\n#context path { fill: #eee; stroke: #bbb; } '
+        css = 'path { fill-rule: evenodd; }'
         svg.cdata(css, style)
         metadata = svg.node('metadata', svg.root)
         views = svg.node('views', metadata)
@@ -62,6 +62,11 @@ class SvgRenderer(MapRenderer):
         node = self._render_geometry(feature.geometry)
         if node is None:
             return None
+
+        if attributes == 'all':
+            attributes = []
+            for k in feature.props:
+                attributes.append(dict(src=k, tgt=k))
 
         for cfg in attributes:
             if 'src' in cfg:

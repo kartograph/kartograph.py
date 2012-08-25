@@ -142,6 +142,8 @@ def parse_layer_attributes(layer):
     if 'attributes' not in layer:
         layer['attributes'] = []
         return
+    if layer['attributes'] == 'all':
+        return
     attrs = []
     for attr in layer['attributes']:
         if is_str(attr):
