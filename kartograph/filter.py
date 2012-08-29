@@ -25,6 +25,8 @@ def filter_record(filt, record):
                     res = res and filter_record([key, '=', filt[key]], record)
     elif isinstance(filt, (list, tuple)):
         res = filter_single(filt, record)
+    elif hasattr(filt, '__call__'):
+        res = filt(record)
     return res
 
 
