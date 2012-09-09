@@ -1,0 +1,9 @@
+#countries {
+	stroke: #777;
+	fill: #eee;
+	stroke-width: 0.5px;
+}
+
+#countries[ISO_A3=FRA] {
+	fill: #e22;
+}

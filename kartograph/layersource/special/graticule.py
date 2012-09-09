@@ -1,8 +1,7 @@
 
-from kartograph.geometry import Line, Feature
+from kartograph.geometry import MultiLineFeature
 from kartograph.layersource.layersource import LayerSource
-from kartograph.proj.azimuthal import Azimuthal
-
+from shapely.geometry import LineString
 
 class GraticuleLayer(LayerSource):
     """
@@ -42,7 +41,7 @@ class GraticuleLayer(LayerSource):
                 if proj._visible(lon, lat):
                     pts.append((lon, lat))
             if len(pts) > 1:
-                line = Feature(Line(pts), props)
+                line = MultiLineFeature(LineString(pts), props)
                 line_features.append(line)
         print line_features
 
@@ -62,7 +61,7 @@ class GraticuleLayer(LayerSource):
                 if proj._visible(lon, lat_):
                     pts.append((lon, lat_))
             if len(pts) > 1:
-                line = Feature(Line(pts), props)
+                line = MultiLineFeature(LineString(pts), props)
                 line_features.append(line)
 
         return line_features

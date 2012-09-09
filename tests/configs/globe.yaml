@@ -1,0 +1,8 @@
+proj:
+  id: ortho
+layers:
+  - id: countries
+    src: data/ne_50m_admin_0_countries.shp
+bounds:
+  mode: bbox
+  data: [-180,-90,180,90]

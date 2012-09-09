@@ -1,0 +1,15 @@
+{
+	"layers": [{
+		"id": "layer1",
+		"src": "data/ne_50m_admin_0_countries.shp"
+	}],
+	"bounds": {
+		"mode": "polygons",
+		"data": {
+			"layer": "layer1",
+			"filter": ["ISO_A3", "=", "ESP"],
+			"min-area": 0.2
+		},
+		"padding": 0.08
+	}
+}

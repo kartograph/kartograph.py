@@ -16,8 +16,17 @@ def filter_record(filt, record):
             res = False
             for sfilt in filt['or']:
                 res = res or filter_record(sfilt, record)
-    elif isinstance(filt, list):
+        else:
+            res = True
+            for key in filt:
+                if isinstance(filt[key], (list, tuple)):
+                    res = res and filter_record([key, 'in', filt[key]], record)
+                else:
+                    res = res and filter_record([key, '=', filt[key]], record)
+    elif isinstance(filt, (list, tuple)):
         res = filter_single(filt, record)
+    elif hasattr(filt, '__call__'):
+        res = filt(record)
     return res
 
 

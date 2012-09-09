@@ -4,14 +4,48 @@ API 2.0
 helper methods for validating options dictionary
 """
 
-import os.path, proj, errors
+import os.path
+import proj
+import errors
 
+Error = errors.KartographError
 
-Error = errors.KartographOptionParseError
+try:
+    # included in standard lib from Python 2.7
+    from collections import OrderedDict
+except ImportError:
+    # try importing the backported drop-in replacement
+    # it's available on PyPI
+    from ordereddict import OrderedDict
 
 
 def is_str(s):
     return isinstance(s, (str, unicode))
+
+
+def read_map_descriptor(f):
+    content = f.read()
+    ext = os.path.splitext(f.name)[1].lower()
+
+    if ext == '.json':
+        import json
+        try:
+            cfg = json.loads(content, object_pairs_hook=OrderedDict)
+        except Exception, e:
+            raise Error('parsing of json map configuration failed.\n' + e)
+        else:
+            return cfg
+    elif ext in ('.yaml', '.yml'):
+        import yaml
+        from yaml_ordered_dict import OrderedDictYAMLLoader
+        try:
+            cfg = yaml.load(content, OrderedDictYAMLLoader)
+        except Exception, e:
+            raise Error('parsing of yaml map configuration failed.\n' + e)
+        else:
+            return cfg
+    else:
+        raise Error('supported config formats are .json and .yaml')
 
 
 def parse_options(opts):
@@ -43,6 +77,9 @@ def parse_proj(opts):
     for attr in prjClass.attributes():
         if attr not in prj:
             prj[attr] = "auto"
+        else:
+            if prj[attr] != "auto":
+                prj[attr] = prj[attr]
 
 
 def parse_layers(opts):
@@ -51,17 +88,32 @@ def parse_layers(opts):
     l_id = 0
     g_id = 0
     s_id = 0
+    layers = []
+    if isinstance(opts['layers'], list):
+        for layer in opts['layers']:
+            layers.append(layer)
+    elif isinstance(opts['layers'], OrderedDict):
+        for layer_id in opts['layers']:
+            layer = opts['layers'][layer_id]
+            layer['id'] = layer_id
+            layers.append(layer)
+    opts['layers'] = layers
+
     for layer in opts['layers']:
-        if 'styles' not in layer:
-            layer['styles'] = {}
+        if 'render' not in layer:
+            layer['render'] = True
         if 'src' not in layer and 'special' not in layer:
             raise Error('you need to define the source for your layers')
         if 'src' in layer:
-            if not os.path.exists(layer['src']):
-                raise Error('layer source not found: ' + layer['src'])
+            # We must not check if the file exists, since
+            # we might deal with a database connection
+            #if not os.path.exists(layer['src']):
+            #    raise Error('layer source not found: ' + layer['src'])
             if 'id' not in layer:
                 layer['id'] = 'layer_' + str(l_id)
                 l_id += 1
+            if 'charset' not in layer:
+                layer['charset'] = 'utf-8'
         elif 'special' in layer:
             if layer['special'] == 'graticule':
                 if 'id' not in layer:
@@ -69,8 +121,6 @@ def parse_layers(opts):
                     if g_id > 0:
                         layer['id'] += '_' + str(g_id)
                     g_id += 1
-                if 'fill' not in layer['styles']:
-                    layer['styles']['fill'] = 'None'
                 parse_layer_graticule(layer)
             elif layer['special'] == 'sea':
                 if 'id' not in layer:
@@ -80,6 +130,7 @@ def parse_layers(opts):
                     s_id += 1
 
         parse_layer_attributes(layer)
+        parse_layer_labeling(layer)
         parse_layer_filter(layer)
         parse_layer_join(layer)
         parse_layer_simplify(layer)
@@ -91,16 +142,31 @@ def parse_layer_attributes(layer):
     if 'attributes' not in layer:
         layer['attributes'] = []
         return
+    if layer['attributes'] == 'all':
+        return
     attrs = []
     for attr in layer['attributes']:
         if is_str(attr):
-            if isinstance(layer['attributes'], list):
+            if isinstance(layer['attributes'], list):  # ["ISO_A3", "FIPS"]
                 attrs.append({'src': attr, 'tgt': attr})
-            elif isinstance(layer['attributes'], dict):
-                attrs.append({'src': attr, 'tgt': layer['attributes'][attr]})
+            elif isinstance(layer['attributes'], dict):  # { "iso": "ISO_A3" }
+                attrs.append({'src': layer['attributes'][attr], 'tgt': attr})
         elif isinstance(attr, dict) and 'src' in attr and 'tgt' in attr:
             attrs.append(attr)
     layer['attributes'] = attrs
+
+
+def parse_layer_labeling(layer):
+    if 'labeling' not in layer:
+        layer['labeling'] = False
+        return
+    lbl = layer['labeling']
+    if 'position' not in lbl:
+        lbl['position'] = 'centroid'
+    if 'buffer' not in lbl:
+        lbl['buffer'] = False
+    if 'key' not in lbl:
+        lbl['key'] = False
 
 
 def parse_layer_filter(layer):
@@ -138,8 +204,10 @@ def parse_layer_join(layer):
         return
 
     join = layer['join']
+    if isinstance(join, bool):
+        join = layer['join'] = {}
     if 'group-by' not in join:
-        raise Error('missing attribute "group-by": you need to specify an attribute by which the features should be joined.')
+        join['group-by'] = False
     if 'groups' not in join:
         join['groups'] = None
     if 'group-as' not in join:
@@ -147,15 +215,20 @@ def parse_layer_join(layer):
 
 
 def parse_layer_simplify(layer):
+    if 'filter-islands' not in layer:
+        layer['filter-islands'] = False
     if 'unify-precision' not in layer:
         layer['unify-precision'] = None
     if 'simplify' not in layer:
-        layer['simplify'] = 2.0
+        layer['simplify'] = False
         return
     if layer['simplify'] is False:
         return
+    if isinstance(layer['simplify'], (int, float, str, unicode)):
+        # default to visvalingam-whyatt
+        layer['simplify'] = {"method": "visvalingam-whyatt", "tolerance": float(layer['simplify'])}
     try:
-        layer['simplify'] = float(layer['simplify'])
+        layer['simplify']['tolerance'] = float(layer['simplify']['tolerance'])
     except ValueError:
         raise Error('could not convert simplification amount to float')
 
@@ -208,14 +281,16 @@ def parse_bounds(opts):
         #return
     bounds = opts['bounds']
     if 'mode' not in bounds:
-        bounds['mode'] = 'bbox'
+        bounds['mode'] = 'polygons'
 
     if 'data' not in bounds:
-        bounds['data'] = [-180, -90, 180, 90]
-        bounds['mode'] = 'bbox'
+        bounds['data'] = {}
 
     mode = bounds['mode']
     data = bounds['data']
+
+    if 'crop' not in bounds:
+        bounds['crop'] = 'auto'
 
     if "padding" not in bounds:
         bounds["padding"] = 0
@@ -243,10 +318,14 @@ def parse_bounds(opts):
             raise
         except:
             raise Error('bounds mode points requires array with (lon,lat) tuples')
-    elif mode in ("polygons", "polygon"):
+    elif mode[:4] == 'poly':
         bounds['mode'] = mode = "polygons"
         if "layer" not in data or not is_str(data["layer"]):
-            raise Error('you must specify a layer for bounds mode ' + mode)
+            # using the first layer for bound
+            data["layer"] = opts['layers'][0]['id']
+            # raise Error('you must specify a layer for bounds mode ' + mode)
+        if "filter" not in data:
+            data["filter"] = False
         if "attribute" not in data or not is_str(data["attribute"]):
             data["attribute"] = None
         if "values" not in data:
@@ -283,3 +362,9 @@ def parse_export(opts):
         exp["round"] = False
     else:
         exp["round"] = int(exp["round"])
+    if "crop-to-view" not in exp:
+        exp['crop-to-view'] = True
+    if "scalebar" not in exp:
+        exp['scalebar'] = False
+    elif exp['scalebar'] is True:
+        exp['scalebar'] = dict()

@@ -1,0 +1,4 @@
+data/*
+log.txt
+results/*.svg
+tmp.svg

@@ -9,9 +9,8 @@ class MPoint:
         self.y = y
         self.simplified = False
         self.deleted = False
-        self.two = False
-        self.three = False
         self.keep = False
+        self.features = set()
 
     def isDeletable(self):
         if self.keep or self.simplified or self.three:

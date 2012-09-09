@@ -1,0 +1,5 @@
+proj:
+  id: robinson
+layers:
+  - id: countries
+    src: data/ne_50m_admin_0_countries.shp

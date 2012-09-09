@@ -18,7 +18,9 @@
 
 from azimuthal import Azimuthal
 from ortho import Orthographic
-from laea import LAEA
+from laea import LAEA, P4_LAEA
 from stereo import Stereographic
 from satellite import Satellite
 from equi import EquidistantAzimuthal
+
+__all__ = ['Azimuthal', 'Orthographic', 'LAEA', 'P4_LAEA', 'Stereographic', 'Satellite', 'EquidistantAzimuthal']

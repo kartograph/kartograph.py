@@ -1,0 +1,11 @@
+{
+	"layers": {
+		"neighbors": {
+			"src": "data/ne_50m_admin_0_countries.shp"
+		},
+		"country": {
+			"src": "data/ne_50m_admin_0_countries.shp",
+			"filter": ["ISO_A3","=","DEU"]
+		}
+	}
+}

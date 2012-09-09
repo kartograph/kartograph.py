@@ -26,54 +26,72 @@ class Cylindrical(Proj):
     def __init__(self, lon0=0.0, flip=0):
         self.flip = flip
         self.lon0 = lon0
-        self.sea = self.sea_coords()
-
-        if lon0 != 0.0:
-            from Polygon import MultiPolygon as Poly
-            self.inside_p = Poly(self.sea)
-
-    def plot(self, polygon, truncate=True):
-        if self.lon0 != 0.0:
-            polygons = self._shift_polygon(polygon)
-            plotted = []
-            for polygon in polygons:
-                plotted += super(Cylindrical, self).plot(polygon, False)
-            return plotted
-        else:
-            return super(Cylindrical, self).plot(polygon, False)
+        self.bounds = self.bounding_geometry()
 
     def _shift_polygon(self, polygon):
         """
         shifts a polygon according to the origin longitude
         """
-        from Polygon import Polygon as Poly
+        if self.lon0 == 0.0:
+            return [polygon]  # no need to shift anything
+
+        from shapely.geometry import Polygon
         # we need to split and join some polygons
         poly_coords = []
-        for (lon, lat) in polygon:
+        holes = []
+        for (lon, lat) in polygon.exterior.coords:
             poly_coords.append((lon - self.lon0, lat))
-        poly = Poly(poly_coords)
+        for hole in polygon.interiors:
+            hole_coords = []
+            for (lon, lat) in hole.coords:
+                hole_coords.append((lon - self.lon0, lat))
+            holes.append(hole_coords)
+        poly = Polygon(poly_coords, holes)
 
         polygons = []
 
-        p_in = poly & self.inside_p
-        for i in range(len(p_in)):
-            polygon = []
-            for (lon, lat) in p_in.contour(i):
-                polygon.append((lon, lat))
-            polygons.append(polygon)
+        #print "shifted polygons", (time.time() - start)
+        #start = time.time()
 
-        p_out = poly - p_in
-        for i in range(len(p_out)):
-            polygon = []
-            s = 0
+        try:
+            p_in = poly.intersection(self.bounds)
+            polygons += hasattr(p_in, 'geoms') and p_in.geoms or [p_in]
+        except:
+            pass
+
+        #print "computed polygons inside bounds", (time.time() - start)
+        #start = time.time()
+
+        try:
+            p_out = poly.symmetric_difference(self.bounds)
+            out_geoms = hasattr(p_out, 'geoms') and p_out.geoms or [p_out]
+        except:
+            out_geoms = []
+            pass
+
+        #print "computed polygons outside bounds", (time.time() - start)
+        #start = time.time()
+
+        for polygon in out_geoms:
+            ext_pts = []
+            int_pts = []
+            s = 0  # at first we compute the avg longitude
             c = 0
-            for (lon, lat) in p_out.contour(i):
+            for (lon, lat) in polygon.exterior.coords:
                 s += lon
                 c += 1
-            left = s / float(c) < -180  # check avg longitude
-            for (lon, lat) in p_out.contour(i):
-                polygon.append((lon + (-360, 360)[left], lat))
-            polygons.append(polygon)
+            left = s / float(c) < -180  # and use it to decide where to shift the polygon
+            for (lon, lat) in polygon.exterior.coords:
+                ext_pts.append((lon + (-360, 360)[left], lat))
+            for interior in polygon.interiors:
+                pts = []
+                for (lon, lat) in interior.coords:
+                    pts.append((lon + (-360, 360)[left], lat))
+                int_pts.append(pts)
+            polygons.append(Polygon(ext_pts, int_pts))
+
+        # print "shifted outside polygons to inside", (time.time() - start)
+
         return polygons
 
     def _visible(self, lon, lat):

@@ -1,0 +1,9 @@
+# osm test config
+layers:
+- id: streets
+  src: postgis:dbname=germany-osm
+  table: planet_osm_polygon
+  query: "\"natural\" = 'water' OR \"waterway\" = 'riverbank'"
+bounds:
+  mode: bbox
+  data: [11.37, 51.969, 11.876, 52.337]

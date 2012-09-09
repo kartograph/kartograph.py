@@ -51,6 +51,7 @@ from azimuthal import *
 
 projections['ortho'] = Orthographic
 projections['laea'] = LAEA
+projections['p4.laea'] = P4_LAEA
 projections['stereo'] = Stereographic
 projections['satellite'] = Satellite
 projections['eda'] = EquidistantAzimuthal
@@ -60,30 +61,9 @@ from conic import *
 
 projections['lcc'] = LCC
 
+from proj4 import Proj4
 
-class Proj4(Proj):
-
-    def __init__(self, projstr):
-        import pyproj
-        self.proj = pyproj.Proj(projstr)
-
-    def project(self, lon, lat):
-        lon, lat = self.ll(lon, lat)
-        x, y = self.proj(lon, lat)
-        return (x, y * -1)
-
-
-class LCC__(Proj4):
-
-    def __init__(self, lat0=0, lon0=0, lat1=28, lat2=30):
-        Proj4.__init__(self, '+proj=lcc +lat_0=%f +lon_0=%f +lat_1=%f +lat_2=%f' % (lat0, lon0, lat1, lat2))
-
-    def _visible(self, lon, lat):
-        return True
-
-    def _truncate(self, x, y):
-        return (x, y)
-
+projections['proj4'] = Proj4
 
 for pjname in projections:
     projections[pjname].name = pjname
