@@ -2,7 +2,7 @@
 """
 computes a circle cartogram for a given svg map + data file
 """
-
+import sys
 
 class Cartogram:
 
@@ -51,7 +51,7 @@ class Cartogram:
         for row in doc:
             if not head:
                 head = row
-                print head
+                sys.stderr.write(head)
             else:
                 id = row[head.index(key)].strip()
                 val = float(row[head.index(value)])

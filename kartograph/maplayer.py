@@ -57,7 +57,8 @@ class MapLayer(object):
                     bbox = layer.map._unprojected_bounds
                     bbox.inflate(inflate=opts['bounds']['padding'] * 2)
                 elif _verbose:
-                    print 'could not compute bounding box for auto-cropping'
+                    pass
+                    #print 'could not compute bounding box for auto-cropping'
             else:
                 # otherwise it will use the user defined bbox in the format
                 # [minLon, minLat, maxLon, maxLat]
@@ -80,7 +81,8 @@ class MapLayer(object):
                 charset=layer.options['charset']
             )
             if _verbose:
-                print 'loaded %d features from shapefile %s' % (len(features), layer.options['src'])
+                #print 'loaded %d features from shapefile %s' % (len(features), layer.options['src'])
+                pass
 
         # In contrast to regular layers, the geometry for **special (or virtual) layers** is generated
         # by Kartograph itself, based on some properties defined in the layer config.

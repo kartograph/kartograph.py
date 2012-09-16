@@ -1,4 +1,5 @@
 from shapely.geos import TopologicalError
+import sys
 
 verbose = False
 
@@ -37,7 +38,8 @@ class Feature:
                     self.geometry = None
             else:
                 if verbose:
-                    print "warning: geometry is invalid"
+                    sys.stderr.write("warning: geometry is invalid")
+
 
     def subtract_geom(self, geom):
         if self.geometry:
@@ -45,7 +47,7 @@ class Feature:
                 self.geometry = self.geometry.difference(geom)
             except TopologicalError:
                 if verbose:
-                    print 'warning: couldnt subtract from geometry'
+                    sys.stderr.write('warning: couldnt subtract from geometry')
 
     def project_geometry(self, proj):
         self.geometry = proj.plot(self.geometry)

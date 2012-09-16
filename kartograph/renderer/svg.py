@@ -11,6 +11,7 @@ from kartograph.mapstyle import style_diff, remove_unit
 from xml.dom import minidom
 from xml.dom.minidom import parse
 import re
+import os
 
 
 class SvgRenderer(MapRenderer):
@@ -315,8 +316,8 @@ class SvgRenderer(MapRenderer):
     def write(self, filename):
         self.svg.write(filename)
 
-    def preview(self):
-        self.svg.preview()
+    def preview(self, command):
+        self.svg.preview(command)
 
     def __str__(self):
         return self.svg.tostring()
@@ -406,10 +407,13 @@ class SvgDocument(object):
 
     # Don't blame me if you don't have a command-line shortcut to
     # simply the best free browser of the world.
-    def preview(self):
-        self.write('tmp.svg')
+    def preview(self, command):
+        import tempfile
+        tmpfile = tempfile.NamedTemporaryFile(suffix='.svg', delete=False)
+        self.write(tmpfile)
+        print 'map stored to', tmpfile.name
         from subprocess import call
-        call(["firefox", "tmp.svg"])
+        call([command, tmpfile.name])
 
     def tostring(self):
         return self.doc.toxml()

@@ -7,6 +7,7 @@ from geometry import BBox, View
 from proj import projections
 from filter import filter_record
 from errors import KartographError
+import sys
 
 # Map
 # ---
@@ -146,7 +147,7 @@ class Map(object):
                 lat0 = 0
         else:
             if verbose:
-                print "unrecognized bound mode", mode
+                sys.stderr.write("unrecognized bound mode", mode)
         return (lon0, lat0)
 
     def _init_bounds(self):
@@ -250,8 +251,8 @@ class Map(object):
             charset=layer.options['charset']
         )
 
-        if verbose:
-            print 'found %d bounding features' % len(features)
+        #if verbose:
+            #print 'found %d bounding features' % len(features)
 
         # Omit tiny islands, if needed.
         if layer.options['filter-islands']:

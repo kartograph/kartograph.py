@@ -97,7 +97,7 @@ def _checkRule(layer_id, layer_classes, fprops, rule):
                                 elif comp == '<=':
                                     match = match and fprops[key] <= val
                         else:
-                            print r
+                            # print r
                             match = False
                     if match is True:
                         return True

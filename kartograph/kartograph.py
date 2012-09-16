@@ -6,6 +6,7 @@ from copy import deepcopy
 from renderer import SvgRenderer
 from mapstyle import MapStyle
 from map import Map
+import os
 
 
 # Kartograph
@@ -54,10 +55,23 @@ class Kartograph(object):
             renderer.render(style)
 
             if preview:
-                renderer.preview()
+                if 'KARTOGRAPH_PREVIEW' in os.environ:
+                    command = os.environ['KARTOGRAPH_PREVIEW']
+                else:
+                    commands = dict(win32='start', win64='start', darwin='open', linux2='xdg-open')
+                    import sys
+                    if sys.platform in commands:
+                        command = commands[sys.platform]
+                    else:
+                        sys.stderr.write('don\'t know how to preview SVGs on your system. Try setting the KARTOGRAPH_PREVIEW environment variable.')
+                        print renderer
+                        return
+                renderer.preview(command)
             # Write the map to a file or return the renderer instance.
             if outfile is None:
                 return renderer
+            elif outfile == '-':
+                print renderer
             else:
                 renderer.write(outfile)
         else:

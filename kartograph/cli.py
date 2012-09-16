@@ -4,6 +4,7 @@ command line interface for kartograph
 """
 
 import argparse
+import os
 import os.path
 from options import read_map_descriptor
 
@@ -29,7 +30,7 @@ parser = argparse.ArgumentParser(prog='kartograph', description='Generates SVG m
 
 parser.add_argument('config', type=argparse.FileType('r'), help='the configuration for the map. accepts json and yaml.')
 parser.add_argument('--style', '-s', metavar='FILE', type=argparse.FileType('r'), help='map stylesheet')
-parser.add_argument('--output', '-o', metavar='FILE', type=argparse.FileType('w'), help='the file in which the map will be stored')
+parser.add_argument('--output', '-o', metavar='FILE', help='the file in which the map will be stored')
 parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
 parser.add_argument('--format', '-f', metavar='svg', help='output format, if not specified it will be guessed from output filename or default to svg')
 parser.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
@@ -45,8 +46,8 @@ def render_map(args):
     K = Kartograph()
     if args.format:
         format = args.format
-    elif args.output:
-        format = os.path.splitext(args.output.name)[1][1:]
+    elif args.output and args.output != '-':
+        format = os.path.splitext(args.output)[1][1:]
     else:
         format = 'svg'
     try:
@@ -56,6 +57,11 @@ def render_map(args):
             css = args.style.read()
         else:
             css = None
+        if args.output is None and not args.preview:
+            args.output = '-'
+        if args.output and args.output != '-':
+            args.output = open(args.output, 'w')
+
         K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css)
         if not args.output:
             # output to stdout
@@ -75,11 +81,10 @@ def print_error(err):
     exc = sys.exc_info()
     for (filename, line, func, code) in traceback.extract_tb(exc[2]):
         if filename[:len(__file__) - 7] == __file__[:-7]:
-            print '  \033[1;33;40m%s\033[0m, \033[0;37;40min\033[0m %s()\n  \033[1;31;40m%d:\033[0m \033[0;37;40m%s\033[0m' % (filename[ignore_path_len:], func, line, code)
+            sys.stderr.write('  \033[1;33;40m%s\033[0m, \033[0;37;40min\033[0m %s()\n  \033[1;31;40m%d:\033[0m \033[0;37;40m%s\033[0m' % (filename[ignore_path_len:], func, line, code))
         else:
-            print '  %s, in %s()\n  %d: %s' % (filename, func, line, code)
-    print
-    print err
+            sys.stderr.write('  %s, in %s()\n  %d: %s' % (filename, func, line, code))
+    sys.stderr.write('\n' + str(err))
 
 
 def main():
@@ -97,7 +102,8 @@ def main():
         args.func(args)
 
     elapsed = (time.time() - start)
-    print 'execution time: %.3f secs' % elapsed
+    if args.output != '-':
+        print 'execution time: %.3f secs' % elapsed
     sys.exit(0)
 
 
