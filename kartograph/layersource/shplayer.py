@@ -6,6 +6,8 @@ from os.path import exists
 from osr import SpatialReference
 import pyproj
 import shapefile
+import os
+import os.path
 
 verbose = False
 
@@ -21,6 +23,17 @@ class ShapefileLayer(LayerSource):
         """
         if isinstance(src, unicode):
             src = src.encode('ascii', 'ignore')
+        if not os.path.exists(src) and 'KARTOGRAPH_DATA' in os.environ:
+            # try
+            paths = os.environ['KARTOGRAPH_DATA'].split(os.pathsep)
+            for path in paths:
+                if path[:-1] != os.sep and src[0] != os.sep:
+                    path = path + os.sep
+                if os.path.exists(path + src):
+                    src = path + src
+                    break
+            if not os.path.exists(src):
+                raise KartographError('shapefile not found')
         self.shpSrc = src
         self.sr = shapefile.Reader(src)
         self.recs = []
