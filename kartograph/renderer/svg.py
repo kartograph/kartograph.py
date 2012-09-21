@@ -199,6 +199,12 @@ class SvgRenderer(MapRenderer):
                     lbl['lg-buffer'] = lgbuf
                 lg = svg.node('g', svg.root, id=layer.id + '-label', stroke='none')
                 self.style.applyStyle(lg, layer.id + '-label', ['label'])
+                if not lg.getAttribute('font-size'):
+                    lg.setAttribute('font-size', '12px')
+                if not lg.getAttribute('font-family'):
+                    lg.setAttribute('font-family', 'Arial')
+                if not lg.getAttribute('fill'):
+                    lg.setAttribute('fill', '#000')
                 lbl['lg'] = lg
             else:
                 lg = None
@@ -223,7 +229,7 @@ class SvgRenderer(MapRenderer):
         #    svg.root.appendChild(lg)
 
     def _render_point(self, geometry):
-        dot = self.svg.node('circle', cx=geometry.x, cy=geometry.y, r=1)
+        dot = self.svg.node('circle', cx=geometry.x, cy=geometry.y, r=2)
         return dot
 
     def _render_label(self, feature, labelOpts):
@@ -234,6 +240,7 @@ class SvgRenderer(MapRenderer):
         if not key:
             key = feature.props.keys()[0]
         if key not in feature.props:
+            sys.stderr.write('could not find feature property "%s" for labeling\n' % key)
             return
         if 'min-area' in labelOpts and feature.geometry.area < float(labelOpts['min-area']):
             return

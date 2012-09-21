@@ -134,6 +134,8 @@ def style_diff(d1, d2):
 
 def remove_unit(val):
     units = ('px', 'pt')
+    if val is None or val == '':
+        return None
     for unit in units:
         if val[-len(unit):] == unit:
             return float(val[:-len(unit)])

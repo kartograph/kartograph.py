@@ -5,19 +5,22 @@
 			"filter": ["ISO_A3","=","DEU"]
 		},
 		"cities": {
-			"src": "data/cities-proj.csv",
-			"x": "X",
-			"y": "Y",
-			"attributes": ["name"],
-			"crs": "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+			"src": "data/cities.csv",
+			"dialect": "excel-tab",
+			"x": "longitude",
+			"y": "latitude",
+			"attributes": ["city"],
+			"labeling": {
+				"key": "city"
+			}
 		}
 	},
 	"bounds": {
 		"mode": "polygon",
 		"data": {
-			"layer": "cities"
+			"layer": "country"
 		},
-		"padding": 0.09
+		"padding": 0.06
 	},
 	"export": {
 		"height": 600,
