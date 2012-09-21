@@ -41,7 +41,9 @@ def read_map_descriptor(f):
         try:
             cfg = yaml.load(content, OrderedDictYAMLLoader)
         except Exception, e:
-            raise Error('parsing of yaml map configuration failed.\n' + e)
+            sys.stderr.write('parsing of yaml map configuration failed.\n')
+            print e
+            raise e
         else:
             return cfg
     else:

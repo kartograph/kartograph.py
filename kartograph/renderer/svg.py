@@ -196,15 +196,11 @@ class SvgRenderer(MapRenderer):
                     lgbuf = svg.node('g', svg.root, id=layer.id + '-label-buffer')
                     self.style.applyStyle(lgbuf, layer.id + '-label', ['label'])
                     self.style.applyStyle(lgbuf, layer.id + '-label-buffer', ['label-buffer'])
+                    _apply_default_label_styles(lgbuf)
                     lbl['lg-buffer'] = lgbuf
                 lg = svg.node('g', svg.root, id=layer.id + '-label', stroke='none')
                 self.style.applyStyle(lg, layer.id + '-label', ['label'])
-                if not lg.getAttribute('font-size'):
-                    lg.setAttribute('font-size', '12px')
-                if not lg.getAttribute('font-family'):
-                    lg.setAttribute('font-family', 'Arial')
-                if not lg.getAttribute('fill'):
-                    lg.setAttribute('fill', '#000')
+                _apply_default_label_styles(lg)
                 lbl['lg'] = lg
             else:
                 lg = None
@@ -222,7 +218,7 @@ class SvgRenderer(MapRenderer):
                         pass
                         #sys.stderr.write("feature.to_svg is None", feat)
                 if lbl is not False:
-                    self._render_label(feat, lbl)
+                    self._render_label(layer, feat, lbl)
 
         # Finally add label groups on top of all other groups
         # for lg in label_groups:
@@ -232,7 +228,7 @@ class SvgRenderer(MapRenderer):
         dot = self.svg.node('circle', cx=geometry.x, cy=geometry.y, r=2)
         return dot
 
-    def _render_label(self, feature, labelOpts):
+    def _render_label(self, layer, feature, labelOpts):
         #if feature.geometry.area < 20:
         #    return
         cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
@@ -246,9 +242,11 @@ class SvgRenderer(MapRenderer):
             return
         text = feature.props[key]
         if labelOpts['buffer'] is not False:
-            self._label(text, cx, cy, labelOpts['lg-buffer'], labelOpts)
-
-        self._label(text, cx, cy, labelOpts['lg'], labelOpts)
+            l = self._label(text, cx, cy, labelOpts['lg-buffer'], labelOpts)
+            self.style.applyFeatureStyle(l, layer.id + '-label', ['label'], feature.props)
+            self.style.applyFeatureStyle(l, layer.id + '-label-buffer', ['label-buffer'], feature.props)
+        l = self._label(text, cx, cy, labelOpts['lg'], labelOpts)
+        self.style.applyFeatureStyle(l, layer.id + '-label', ['label'], feature.props)
 
     def _label(self, text, x, y, group, opts):
         # split text into ines
@@ -271,11 +269,11 @@ class SvgRenderer(MapRenderer):
             tspan = self.svg.node('tspan', lbl, x=x, dy=yo)
             yo += lh
             self.svg.cdata(line, tspan)
+        return lbl
 
     def _render_scale_bar(self, opts):
 
         def format(m):
-
             if m > 1000:
                 if m % 1000 == 0:
                     return (str(int(m / 1000)), 'km')
@@ -289,7 +287,7 @@ class SvgRenderer(MapRenderer):
             opts['align'] = 'bl'  # default to bottom left
         if 'offset' not in opts:
             opts['offset'] = 20  # 20px offset
-        g = svg.node('g', svg.root, id='scale-bar', shape__rendering='crispEdges',  text__anchor='middle', stroke='none', fill='#000', font__size=13)
+        g = svg.node('g', svg.root, id='scalebar', shape__rendering='crispEdges',  text__anchor='middle', stroke='none', fill='#000', font__size=13)
         left = (opts['offset'], self.map.view.width - pixel - opts['offset'])[opts['align'][1] != 'l']
         top = (opts['offset'] + 20, self.map.view.height - opts['offset'])[opts['align'][0] != 't']
         dy = -8
@@ -311,10 +309,15 @@ class SvgRenderer(MapRenderer):
             path(pts, '#000', 1)
 
         def lbl(txt, x=0, y=0):
+            # buffer
             lbl = svg.node('text', g, x=x, y=y, stroke='#fff', stroke__width='4px')
             svg.cdata(txt, lbl)
+            self.style.applyStyle(lbl, 'scalebar', [])
+            self.style.applyStyle(lbl, 'scalebar-buffer', [])
+            # text
             lbl = svg.node('text', g, x=x, y=y)
             svg.cdata(txt, lbl)
+            self.style.applyStyle(lbl, 'scalebar', [])
 
         lbl('%s%s' % format(meters), x=int(left + pixel), y=(top + dy - 7))
         lbl('%s' % format(meters * 0.5)[0], x=int(left + pixel * 0.5), y=(top + dy - 7))
@@ -449,3 +452,13 @@ def _get_label_position(geometry, pos):
         return (pt.x, pt.y)
     else:
         raise KartographError('unknown label positioning mode ' + pos)
+
+def _apply_default_label_styles(lg):
+    if not lg.getAttribute('font-size'):
+        lg.setAttribute('font-size', '12px')
+    if not lg.getAttribute('font-family'):
+        lg.setAttribute('font-family', 'Arial')
+    if not lg.getAttribute('fill'):
+        lg.setAttribute('fill', '#000')
+
+

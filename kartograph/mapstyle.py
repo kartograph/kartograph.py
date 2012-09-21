@@ -39,6 +39,13 @@ class MapStyle(object):
             node.setAttribute(key, style[key])
         return style
 
+    def applyFeatureStyle(self, node, layer_id, layer_classes, fprops=dict()):
+        layer_style = self.getStyle(layer_id, layer_classes)
+        feat_style = self.getStyle(layer_id, layer_classes, fprops)
+        feat_style = style_diff(feat_style, layer_style)
+        for key in feat_style:
+            node.setAttribute(key, feat_style[key])
+
 
 def _checkRule(layer_id, layer_classes, fprops, rule):
     parts = [[]]
