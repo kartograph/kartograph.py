@@ -1,0 +1,26 @@
+{
+	"layers": {
+		"country": {
+			"src": "data/ne_50m_admin_0_countries.shp",
+			"filter": ["ISO_A3","=","DEU"]
+		},
+		"cities": {
+			"src": "data/cities-proj.csv",
+			"x": "X",
+			"y": "Y",
+			"attributes": ["name"],
+			"crs": "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+		}
+	},
+	"bounds": {
+		"mode": "polygon",
+		"data": {
+			"layer": "country"
+		}
+	},
+	"export": {
+		"height": 600,
+		"round": 1,
+		"ratio": 0.8
+	}
+}

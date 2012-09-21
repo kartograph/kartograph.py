@@ -30,10 +30,12 @@ class CsvLayer(LayerSource):
         self.proj = None
         self.mode = mode
         if crs is not None:
-            if isinstance(crs, str):
-                self.proj = Proj(crs)
+            if isinstance(crs, (str, unicode)):
+                self.proj = pyproj.Proj(str(crs))
             elif isinstance(crs, dict):
-                self.proj = Proj(**crs)
+                self.proj = pyproj.Proj(**crs)
+            print self.proj
+
         if xfield not in h or yfield not in h:
             raise KartographError('could not find csv column for coordinates (was looking for "%s" and "%s")' % (xfield, yfield))
         else:
@@ -41,7 +43,7 @@ class CsvLayer(LayerSource):
             self.yfield = yfield
 
 
-    def get_features(self, filter=None, bbox=None, ignore_holes=False, charset='utf-8'):
+    def get_features(self, filter=None, bbox=None, ignore_holes=False, charset='utf-8', min_area=0):
         # Eventually we convert the bbox list into a proper BBox instance
         if bbox is not None and not isinstance(bbox, BBox):
             bbox = BBox(bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[0], bbox[1])
@@ -61,7 +63,9 @@ class CsvLayer(LayerSource):
                     attrs[key] = row[i]
             if self.proj is not None:
                 # inverse project coord
-                lon, lat = self.proj(x, y, inverse=True)
+                print x,y
+                x, y = self.proj(x, y, inverse=True)
+                print x,y
             if mode == 'points':
                 features.append(create_feature(Point(x,y), attrs))
             else:
