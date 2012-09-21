@@ -6,9 +6,10 @@ as of version 2.0 kartograph supports multiple import formats
 - GeoJSON ?
 """
 
-__all__ = ['LayerSource', 'ShapefileLayer', 'GraticuleLayer', 'PostGISLayer']
+__all__ = ['LayerSource', 'ShapefileLayer', 'CsvLayer', 'GraticuleLayer', 'PostGISLayer']
 
 from shplayer import ShapefileLayer
+from csvlayer import CsvLayer
 from postgislayer import PostGISLayer
 from layersource import LayerSource
 from special import GraticuleLayer, SeaLayer
@@ -32,6 +33,14 @@ def handle_layer_source(layer, cache={}):
             if isinstance(src, LayerSource):
                 cache[layer['src']] = src
                 return src
+        if src[-4:].lower() == ".csv":
+            mode = _get(layer, 'mode', 'points')
+            x_field = _get(layer, 'x', 'lon')
+            y_field = _get(layer, 'y', 'lat')
+            dialect = _get(layer, 'dialect', 'excel')
+            crs = _get(layer, 'crs')
+            src = CsvLayer(src, mode=mode, xfield=x_field, yfield=y_field, dialect=dialect, crs=crs)
+            return src
         elif src[:8] == "postgis:":
             if 'query' not in layer:
                 layer['query'] = 'true'
@@ -46,3 +55,8 @@ def handle_layer_source(layer, cache={}):
             return GraticuleLayer()
         elif layer['special'] == 'sea':
             return SeaLayer()
+
+def _get(layer, prop, default=None):
+    if prop in layer:
+        return layer[prop]
+    return default

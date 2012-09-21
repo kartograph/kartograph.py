@@ -10,8 +10,8 @@ from kartograph.mapstyle import style_diff, remove_unit
 # The SVG renderer is based on xml.dom.minidom.
 from xml.dom import minidom
 from xml.dom.minidom import parse
+import sys
 import re
-import os
 
 
 class SvgRenderer(MapRenderer):
@@ -213,7 +213,8 @@ class SvgRenderer(MapRenderer):
                             node.setAttribute(prop, str(feat_css[prop]))
                         g.appendChild(node)
                     else:
-                        print "feature.to_svg is None", feat
+                        pass
+                        #sys.stderr.write("feature.to_svg is None", feat)
                 if lbl is not False:
                     self._render_label(feat, lbl)
 

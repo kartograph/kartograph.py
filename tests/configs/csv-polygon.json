@@ -1,0 +1,28 @@
+{
+	"layers": {
+		"country": {
+			"src": "data/ne_50m_admin_0_countries.shp",
+			"filter": ["ISO_A3","=","DEU"]
+		},
+		"cities": {
+			"src": "data/cities.csv",
+			"dialect": "excel-tab",
+			"x": "longitude",
+			"y": "latitude",
+			"attributes": ["name"],
+			"mode": "polygon"
+		}
+	},
+	"bounds": {
+		"mode": "polygon",
+		"data": {
+			"layer": "country"
+		},
+		"padding": 0.06
+	},
+	"export": {
+		"height": 600,
+		"round": 1,
+		"ratio": 0.8
+	}
+}
