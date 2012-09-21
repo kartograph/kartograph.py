@@ -1,0 +1,18 @@
+{
+	"layers": [{
+		"id": "layer1",
+		"src": "data/ne_50m_admin_0_countries.shp",
+		"labeling": {
+			"key": "NAME",
+			"buffer": true
+		}
+	}],
+	"bounds": {
+		"mode": "polygons",
+		"data": {
+			"layer": "layer1",
+			"filter": ["ISO_A3", "in", ["POL", "DEU"]]
+		},
+		"padding": 0.08
+	}
+}
