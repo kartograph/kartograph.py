@@ -9,6 +9,7 @@ import csv
 import pyproj
 
 
+
 verbose = False
 
 
@@ -23,7 +24,7 @@ class CsvLayer(LayerSource):
         """
         if isinstance(src, unicode):
             src = src.encode('ascii', 'ignore')
-        self.cr = csv.reader(open(src), dialect=dialect)
+        self.cr = UnicodeReader(open(src), dialect=dialect)
         # read csv header
         self.header = h = self.cr.next()
         # initialize CRS
@@ -75,3 +76,38 @@ class CsvLayer(LayerSource):
         elif mode == 'polygon':
             features.append(create_feature(Polygon(coords), dict()))
         return features
+
+
+import codecs
+
+
+class UTF8Recoder:
+    """
+    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    """
+    def __init__(self, f, encoding):
+        self.reader = codecs.getreader(encoding)(f)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.reader.next().encode("utf-8")
+
+
+class UnicodeReader:
+    """
+    A CSV reader which will iterate over lines in the CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        f = UTF8Recoder(f, encoding)
+        self.reader = csv.reader(f, dialect=dialect, **kwds)
+
+    def next(self):
+        row = self.reader.next()
+        return [unicode(s, "utf-8") for s in row]
+
+    def __iter__(self):
+        return self
