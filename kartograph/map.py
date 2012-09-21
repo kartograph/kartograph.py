@@ -488,13 +488,14 @@ class Map(object):
         p0 = me.view.project_inverse(p0)
         p1 = me.view.project_inverse(p1)
         from math import sqrt
-        return sqrt((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2) / me.view.width
+        dist = sqrt((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2)
+        return dist / me.view.width
 
     def scale_bar_width(me):
         from math import log
         scale = me.compute_map_scale()
         w = (me.view.width * 0.2) * scale
         exp = int(log(w, 10))
-        nice_w = round(w, -1 - exp)
+        nice_w = round(w, -exp)
         bar_w = nice_w / scale
         return (nice_w, bar_w)
