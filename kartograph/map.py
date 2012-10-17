@@ -175,13 +175,16 @@ class Map(object):
         # If the bound mode is set to *points* we project all
         # points and compute the bounding box.
         if mode[:5] == "point":
+            ubbox = BBox()
             for lon, lat in data:
                 pt = proj.project(lon, lat)
                 bbox.update(pt)
+                ubbox.update((lon, lat))
+            self._unprojected_bounds = ubbox
 
         # In bound mode *polygons*, which should correctly be
         # named gemetry, we compute the bounding boxes of every
-        # geometry. We will also.
+        # geometry.
         if mode[:4] == "poly":
             features = self._get_bounding_geometry()
             ubbox = BBox()
