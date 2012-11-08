@@ -371,7 +371,7 @@ class Map(object):
                 for tocrop in layer.features:
                     cbbox = geom_to_bbox(tocrop.geom)
                     crop_at_layer = layer.options['crop-to']
-                    if crop_at_layer not in self.layers:
+                    if crop_at_layer not in self.layersById:
                         raise KartographError('you want to substract '
                             + 'from layer "%s" which cannot be found'
                             % crop_at_layer)
