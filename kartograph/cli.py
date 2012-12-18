@@ -7,6 +7,7 @@ import argparse
 import os
 import os.path
 from options import read_map_descriptor
+import sys
 
 
 class bcolors:
