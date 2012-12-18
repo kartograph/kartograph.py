@@ -3,7 +3,7 @@ from layersource import LayerSource
 from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
 from os.path import exists
-from osr import SpatialReference
+from osgeo.osr import SpatialReference
 import pyproj
 import shapefile
 import os
