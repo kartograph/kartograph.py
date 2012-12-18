@@ -22,5 +22,5 @@ class LayerSource:
                     src = path + src
                     break
             if not os.path.exists(src):
-                raise KartographError('shapefile not found')
+                raise KartographError('layer source not found: %s' % src)
         return src
