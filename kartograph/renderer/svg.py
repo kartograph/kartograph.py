@@ -236,7 +236,7 @@ class SvgRenderer(MapRenderer):
         if not key:
             key = feature.props.keys()[0]
         if key not in feature.props:
-            sys.stderr.write('could not find feature property "%s" for labeling\n' % key)
+            #sys.stderr.write('could not find feature property "%s" for labeling\n' % key)
             return
         if 'min-area' in labelOpts and feature.geometry.area < float(labelOpts['min-area']):
             return
