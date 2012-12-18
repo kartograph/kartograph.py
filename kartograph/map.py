@@ -473,6 +473,24 @@ class Map(object):
                     groupAs = join['group-as']
                     if groupAs is not False:
                         props[groupAs] = g_id
+
+                    # group.attributes allows you to keep or define
+                    # certain attributes for the joined features
+                    #
+                    # attributes:
+                    #    FIPS_1: code    # use the value of 'code' stored in one of the grouped features
+                    #    NAME:           # define values for each group-id
+                    #       GO: Gorenjska
+                    #       KO: Koroka
+                    if 'attributes' in join:
+                        attrs = join['attributes']
+                        for key in attrs:
+                            if isinstance(attrs[key], dict):
+                                if g_id in attrs[key]:
+                                    props[key] = attrs[key][g_id]
+                            else:
+                                props[key] = groupFeatures[g_id][0].props[attrs[key]]  # use first value
+
                     # Finally join (union) the feature geometries.
                     if g_id in groupFeatures:
                         if 'buffer' in join:
@@ -480,6 +498,17 @@ class Map(object):
                         else:
                             buffer_polygons = 0
                         res += join_features(groupFeatures[g_id], props, buf=buffer_polygons)
+
+                # Export ids as JSON dict, if requested
+                if join['export-ids']:
+                    exp = {}
+                    for g_id in groups:
+                        exp[g_id] = []
+                        for feat in groupFeatures[g_id]:
+                            exp[g_id].append(feat.props[join['export-ids']])
+                    import json
+                    print json.dumps(exp)
+
                 layer.features = res
 
     def compute_map_scale(me):
