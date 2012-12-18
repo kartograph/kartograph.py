@@ -1,4 +1,3 @@
-
 from kartograph import Kartograph
 import sys
 from os import mkdir, remove
@@ -11,12 +10,12 @@ for path in ('data', 'results'):
         mkdir(path)
 
 if not exists('data/ne_50m_admin_0_countries.shp'):
-    # download natural eath shapefile
+    # download natural earth shapefile
     print 'I need a shapefile to test with. Will download one from naturalearthdata.com\n'
     from subprocess import call
-    call(['wget', 'http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/cultural/50m-admin-0-countries.zip'])
+    call(['wget', 'http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/cultural/ne_50m_admin_0_countries.zip'])
     print '\nUnzipping...\n'
-    call(['unzip', '50m-admin-0-countries.zip', '-d', 'data'])
+    call(['unzip', 'ne_50m_admin_0_countries.zip', '-d', 'data'])
 
 passed = 0
 failed = 0
