@@ -1,0 +1,9 @@
+GDAL
+shapely>=1.0.14
+pyshp
+pyyaml
+pykml
+pyproj
+lxml
+ordereddict
+tinycss

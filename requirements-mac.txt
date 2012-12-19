@@ -1,0 +1,9 @@
+shapely>=1.0.14
+pyproj
+pyshp
+pykml
+pyyaml
+lxml
+ordereddict
+tinycss
+psycopg2
