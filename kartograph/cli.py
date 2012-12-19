@@ -94,17 +94,17 @@ def main():
     try:
         args = parser.parse_args()
     except IOError, e:
-        parser.print_help()
-        print '\nIOError:', e
+        # parser.print_help()
+        sys.stderr.write('\n' + str(e) + '\n')
     except Exception, e:
         parser.print_help()
         print '\nError:', e
     else:
         args.func(args)
+        elapsed = (time.time() - start)
+        if args.output != '-':
+            print 'execution time: %.3f secs' % elapsed
 
-    elapsed = (time.time() - start)
-    if args.output != '-':
-        print 'execution time: %.3f secs' % elapsed
     sys.exit(0)
 
 
