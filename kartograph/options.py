@@ -7,6 +7,7 @@ helper methods for validating options dictionary
 import os.path
 import proj
 import errors
+import sys
 
 Error = errors.KartographError
 
@@ -31,8 +32,10 @@ def read_map_descriptor(f):
         import json
         try:
             cfg = json.loads(content, object_pairs_hook=OrderedDict)
-        except Exception, e:
-            raise Error('parsing of json map configuration failed.\n' + e)
+        except Exception:
+            sys.stderr.write('Error: parsing of JSON configuration failed.\n\n')
+            sys.stderr.write('Please check your JSON syntax (e.g. via http://jsonlint.com/).\n')
+            exit(-1)
         else:
             return cfg
     elif ext in ('.yaml', '.yml'):
@@ -40,10 +43,11 @@ def read_map_descriptor(f):
         from yaml_ordered_dict import OrderedDictYAMLLoader
         try:
             cfg = yaml.load(content, OrderedDictYAMLLoader)
-        except Exception, e:
-            sys.stderr.write('parsing of yaml map configuration failed.\n')
-            print e
-            raise e
+        except Exception:
+            sys.stderr.write('Error: parsing of YAML configuration failed.\n\n')
+            sys.stderr.write('Please check your YAML syntax (e.g. via http://yamllint.com/).\n')
+            sys.stderr.write('Check that you\'re using spaces for indentation as tabs are not allowed in YAML.\n')
+            exit(-1)
         else:
             return cfg
     else:
