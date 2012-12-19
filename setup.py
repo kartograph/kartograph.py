@@ -1,9 +1,8 @@
 from setuptools import setup, find_packages
 
 long_desc = """
-Open Source Python library for generating semantic SVG maps.
+Open Source Python library for generating SVG maps from shapefiles and postgis.
 """
-
 
 setup(
     name='kartograph.py',
@@ -26,14 +25,11 @@ setup(
     namespace_packages=[],
     include_package_data=False,
     zip_safe=False,
-    install_requires=["GDAL", "shapely>=1.0.14", "pyshp", "pyyaml", "pykml", "pyproj", "lxml", "ordereddict", "tinycss"],
+    install_requires=[],
     tests_require=[],
     entry_points={
         'console_scripts': [
              'kartograph = kartograph.cli:main'
         ]
-    },
-    extras_require={
-        'postgis':  ["psycopg2"]
     }
 )
