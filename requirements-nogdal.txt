@@ -6,4 +6,5 @@ pyyaml
 lxml
 ordereddict
 tinycss
-psycopg2argparse
+psycopg2
+argparse
