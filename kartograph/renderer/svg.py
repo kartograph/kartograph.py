@@ -10,13 +10,12 @@ from kartograph.mapstyle import style_diff, remove_unit
 # The SVG renderer is based on xml.dom.minidom.
 from xml.dom import minidom
 from xml.dom.minidom import parse
-import sys
 import re
 
 
 class SvgRenderer(MapRenderer):
 
-    def render(self, style, pretty_print):
+    def render(self, style, pretty_print=False):
         """
         The render() method prepares a new empty SVG document and
         stores all the layer features into SVG groups.
@@ -184,7 +183,7 @@ class SvgRenderer(MapRenderer):
         # label_groups = []
         for layer in self.map.layers:
             if len(layer.features) == 0:
-                print "ignoring empty layer", layer.id
+                # print "ignoring empty layer", layer.id
                 continue  # ignore empty layers
             if layer.options['render']:
                 g = svg.node('g', svg.root, id=layer.id)
@@ -327,13 +326,13 @@ class SvgRenderer(MapRenderer):
         lbl('0', x=int(left), y=(top + dy - 7))
 
     def write(self, filename):
-        self.svg.write(filename)
+        self.svg.write(filename, self.pretty_print)
 
     def preview(self, command):
-        self.svg.preview(command)
+        self.svg.preview(command, self.pretty_print)
 
     def __str__(self):
-        return self.svg.tostring()
+        return self.svg.tostring(self.pretty_print)
 
 
 def split_at(text, chars, minLen):
@@ -368,6 +367,7 @@ def split_at(text, chars, minLen):
 # used by one of the earlier versions of Kartograph.
 #
 
+
 class SvgDocument(object):
 
     # Of course, we need to create and XML document with all this
@@ -383,7 +383,6 @@ class SvgDocument(object):
         svg.setAttribute('version', '1.1')
         svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
         _add_attrs(self.root, kwargs)
-        self.pretty_print = kwargs.get('pretty_print', False)
 
     # This is the magic of SvgDocument. Instead of having to do appendChild()
     # and addAttribute() for every node we create, we just call svgdoc.node()
@@ -407,10 +406,10 @@ class SvgDocument(object):
 
     # Here we finally write the SVG file, and we're brave enough
     # to try to write it in Unicode.
-    def write(self, outfile):
+    def write(self, outfile, pretty_print=False):
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
-        if self.pretty_print:
+        if pretty_print:
             raw = self.doc.toprettyxml()
         else:
             raw = self.doc.toxml()
@@ -424,15 +423,17 @@ class SvgDocument(object):
 
     # Don't blame me if you don't have a command-line shortcut to
     # simply the best free browser of the world.
-    def preview(self, command):
+    def preview(self, command, pretty_print=False):
         import tempfile
         tmpfile = tempfile.NamedTemporaryFile(suffix='.svg', delete=False)
-        self.write(tmpfile)
+        self.write(tmpfile, pretty_print)
         print 'map stored to', tmpfile.name
         from subprocess import call
         call([command, tmpfile.name])
 
-    def tostring(self):
+    def tostring(self, pretty_print=False):
+        if pretty_print:
+            return self.doc.toprettyxml()
         return self.doc.toxml()
 
     # This is an artifact of an older version of Kartograph, but
@@ -459,6 +460,7 @@ def _get_label_position(geometry, pos):
     else:
         raise KartographError('unknown label positioning mode ' + pos)
 
+
 def _apply_default_label_styles(lg):
     if not lg.getAttribute('font-size'):
         lg.setAttribute('font-size', '12px')
@@ -466,5 +468,3 @@ def _apply_default_label_styles(lg):
         lg.setAttribute('font-family', 'Arial')
     if not lg.getAttribute('fill'):
         lg.setAttribute('fill', '#000')
-
-
