@@ -24,7 +24,7 @@ def is_str(s):
     return isinstance(s, (str, unicode))
 
 
-def read_map_descriptor(f):
+def read_map_config(f):
     content = f.read()
     ext = os.path.splitext(f.name)[1].lower()
 
