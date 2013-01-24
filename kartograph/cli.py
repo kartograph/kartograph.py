@@ -6,7 +6,7 @@ command line interface for kartograph
 import argparse
 import os
 import os.path
-from options import read_map_descriptor
+from options import read_map_config
 import sys
 
 
@@ -39,12 +39,11 @@ parser.add_argument('--pretty-print', '-P', dest='pretty_print', action='store_t
 
 from kartograph import Kartograph
 import time
-import sys
 import os
 
 
 def render_map(args):
-    cfg = read_map_descriptor(args.config)
+    cfg = read_map_config(args.config)
     K = Kartograph()
     if args.format:
         format = args.format
