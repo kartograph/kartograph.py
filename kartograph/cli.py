@@ -35,6 +35,7 @@ parser.add_argument('--output', '-o', metavar='FILE', help='the file in which th
 parser.add_argument('--verbose', '-v', nargs='?', metavar='', const=True, help='verbose mode')
 parser.add_argument('--format', '-f', metavar='svg', help='output format, if not specified it will be guessed from output filename or default to svg')
 parser.add_argument('--preview', '-p', nargs='?', metavar='', const=True, help='opens the generated svg for preview')
+parser.add_argument('--pretty-print', '-P', dest='pretty_print', action='store_true', help='pretty print the svg file')
 
 from kartograph import Kartograph
 import time
@@ -63,7 +64,7 @@ def render_map(args):
         if args.output and args.output != '-':
             args.output = open(args.output, 'w')
 
-        K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css)
+        K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css, pretty_print=args.pretty_print)
         if not args.output:
             # output to stdout
             # print str(r)
