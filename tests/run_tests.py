@@ -3,7 +3,7 @@ import sys
 from os import mkdir, remove
 from os.path import exists, splitext, basename
 from glob import glob
-from kartograph.options import read_map_descriptor
+from kartograph.options import read_map_config
 
 for path in ('data', 'results'):
     if not exists(path):
@@ -25,7 +25,7 @@ log = open('log.txt', 'w')
 for fn in glob('configs/*.*'):
     fn_parts = splitext(basename(fn))
     try:
-        cfg = read_map_descriptor(open(fn))
+        cfg = read_map_config(open(fn))
         K = Kartograph()
         css_url = 'styles/' + fn_parts[0] + '.css'
         css = None
