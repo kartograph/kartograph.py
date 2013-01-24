@@ -1,7 +1,9 @@
 proj:
-  id: robinson
+    id: laea
 layers:
   - id: countries
     src: data/ne_50m_admin_0_countries.shp
+    filter:
+        ISO_A3: "NZL"
 export:
-  prettyprint: true
+    prettyprint: true
