@@ -4,10 +4,8 @@ from kartograph.errors import *
 from kartograph.geometry import BBox, create_feature
 from shapely.geometry import LineString, Point, Polygon
 
-import sys
 import csv
 import pyproj
-
 
 
 verbose = False
@@ -35,14 +33,12 @@ class CsvLayer(LayerSource):
                 self.proj = pyproj.Proj(str(crs))
             elif isinstance(crs, dict):
                 self.proj = pyproj.Proj(**crs)
-            print self.proj
 
         if xfield not in h or yfield not in h:
             raise KartographError('could not find csv column for coordinates (was looking for "%s" and "%s")' % (xfield, yfield))
         else:
             self.xfield = xfield
             self.yfield = yfield
-
 
     def get_features(self, filter=None, bbox=None, ignore_holes=False, charset='utf-8', min_area=0):
         # Eventually we convert the bbox list into a proper BBox instance
@@ -64,13 +60,11 @@ class CsvLayer(LayerSource):
                     attrs[key] = row[i]
             if self.proj is not None:
                 # inverse project coord
-                print x,y
                 x, y = self.proj(x, y, inverse=True)
-                print x,y
             if mode == 'points':
-                features.append(create_feature(Point(x,y), attrs))
+                features.append(create_feature(Point(x, y), attrs))
             else:
-                coords.append((x,y))
+                coords.append((x, y))
         if mode == 'line':
             features.append(create_feature(LineString(coords), dict()))
         elif mode == 'polygon':

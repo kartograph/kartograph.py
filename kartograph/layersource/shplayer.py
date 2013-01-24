@@ -6,8 +6,7 @@ from os.path import exists
 from osgeo.osr import SpatialReference
 import pyproj
 import shapefile
-import os
-import os.path
+
 
 verbose = False
 
@@ -39,7 +38,7 @@ class ShapefileLayer(LayerSource):
                 raise ValueError("Error importing PRJ information from: %s" % prj_file)
             if srs.IsProjected():
                 self.proj = pyproj.Proj(srs.ExportToProj4())
-                print srs.ExportToProj4()
+                #print srs.ExportToProj4()
 
     def load_records(self):
         """

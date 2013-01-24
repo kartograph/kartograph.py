@@ -3,6 +3,7 @@ from kartograph.geometry import MultiLineFeature
 from kartograph.layersource.layersource import LayerSource
 from shapely.geometry import LineString
 
+
 class GraticuleLayer(LayerSource):
     """
     special layer source for grid of longitudes and latitudes (graticule)
@@ -43,7 +44,7 @@ class GraticuleLayer(LayerSource):
             if len(pts) > 1:
                 line = MultiLineFeature(LineString(pts), props)
                 line_features.append(line)
-        print line_features
+        # print line_features
 
         # longitudes
         for lon in longitudes:
