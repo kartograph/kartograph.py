@@ -26,7 +26,7 @@ class Kartograph(object):
         self.layerCache = {}
         pass
 
-    def generate(self, opts, outfile=None, format='svg', preview=None, stylesheet=None):
+    def generate(self, opts, outfile=None, format='svg', preview=None, stylesheet=None, pretty_print=False):
         """
         Generates a the map and renders it using the specified output format.
         """
@@ -52,7 +52,7 @@ class Kartograph(object):
             style = MapStyle(stylesheet)
             # Create a renderer instance and render the map.
             renderer = _known_renderer[format](_map)
-            renderer.render(style)
+            renderer.render(style, pretty_print)
 
             if preview:
                 if 'KARTOGRAPH_PREVIEW' in os.environ:

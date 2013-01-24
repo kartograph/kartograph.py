@@ -16,12 +16,13 @@ import re
 
 class SvgRenderer(MapRenderer):
 
-    def render(self, style):
+    def render(self, style, pretty_print):
         """
         The render() method prepares a new empty SVG document and
         stores all the layer features into SVG groups.
         """
         self.style = style
+        self.pretty_print = pretty_print
         self._init_svg_doc()
         self._store_layers_to_svg()
         if self.map.options['export']['scalebar'] != False:
@@ -40,7 +41,8 @@ class SvgRenderer(MapRenderer):
             height='%dpx' % h,
             viewBox='0 0 %d %d' % (w, h),
             enable_background='new 0 0 %d %d' % (w, h),
-            style='stroke-linejoin: round; stroke:#000; fill: none;')
+            style='stroke-linejoin: round; stroke:#000; fill: none;',
+            pretty_print=self.pretty_print)
 
         defs = svg.node('defs', svg.root)
         style = svg.node('style', defs, type='text/css')
@@ -381,6 +383,7 @@ class SvgDocument(object):
         svg.setAttribute('version', '1.1')
         svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
         _add_attrs(self.root, kwargs)
+        self.pretty_print = kwargs.get('pretty_print', False)
 
     # This is the magic of SvgDocument. Instead of having to do appendChild()
     # and addAttribute() for every node we create, we just call svgdoc.node()
@@ -407,7 +410,10 @@ class SvgDocument(object):
     def write(self, outfile):
         if isinstance(outfile, str):
             outfile = open(outfile, 'w')
-        raw = self.doc.toxml()
+        if self.pretty_print:
+            raw = self.doc.toprettyxml()
+        else:
+            raw = self.doc.toxml()
         try:
             raw = raw.encode('utf-8')
         except:
