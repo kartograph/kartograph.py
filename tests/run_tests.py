@@ -24,6 +24,7 @@ log = open('log.txt', 'w')
 
 for fn in glob('configs/*.*'):
     fn_parts = splitext(basename(fn))
+    print 'running text', basename(fn), '...',
     try:
         cfg = read_map_config(open(fn))
         K = Kartograph()
@@ -35,6 +36,7 @@ for fn in glob('configs/*.*'):
         if exists(svg_url):
             remove(svg_url)
         K.generate(cfg, 'results/' + fn_parts[0] + '.svg', preview=False, format='svg', stylesheet=css)
+        print 'ok.'
         passed += 1
     except Exception, e:
         import traceback
@@ -45,6 +47,7 @@ for fn in glob('configs/*.*'):
             log.write('  %s, in %s()\n  %d: %s\n' % (filename, func, line, code))
         log.write('\n')
         log.write(str(e))
+        print 'failed.'
         failed += 1
 
 print 'passed: %d\nfailed: %d' % (passed, failed)
