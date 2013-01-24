@@ -64,7 +64,12 @@ def render_map(args):
         if args.output and args.output != '-':
             args.output = open(args.output, 'w')
 
-        K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css, pretty_print=args.pretty_print)
+        if args.pretty_print:
+            if 'export' not in cfg:
+                cfg['export'] = {}
+            cfg['export']['prettyprint'] = True
+
+        K.generate(cfg, args.output, preview=args.preview, format=format, stylesheet=css)
         if not args.output:
             # output to stdout
             # print str(r)

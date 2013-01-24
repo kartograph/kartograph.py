@@ -374,3 +374,6 @@ def parse_export(opts):
         exp['scalebar'] = False
     elif exp['scalebar'] is True:
         exp['scalebar'] = dict()
+
+    if 'prettyprint' not in exp:
+        exp['prettyprint'] = False
