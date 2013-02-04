@@ -371,11 +371,14 @@ class Map(object):
                 for tocrop in layer.features:
                     cbbox = geom_to_bbox(tocrop.geom)
                     crop_at_layer = layer.options['crop-to']
-                    if crop_at_layer not in self.layers:
+                    if crop_at_layer not in self.layersById:
                         raise KartographError('you want to substract '
                             + 'from layer "%s" which cannot be found'
                             % crop_at_layer)
                     for crop_at in self.layersById[crop_at_layer].features:
+                        # Sometimes a bounding box may not exist, so get it
+                        if not hasattr(crop_at.geom,'bbox'):
+                            crop_at.geom.bbox = geom_to_bbox(crop_at.geom)
                         if crop_at.geom.bbox().intersects(cbbox):
                             tocrop.crop_to(crop_at.geom)
                             cropped_features.append(tocrop)
