@@ -407,7 +407,7 @@ class SvgDocument(object):
     # Here we finally write the SVG file, and we're brave enough
     # to try to write it in Unicode.
     def write(self, outfile, pretty_print=False):
-        if isinstance(outfile, str):
+        if isinstance(outfile, (str, unicode)):
             outfile = open(outfile, 'w')
         if pretty_print:
             raw = self.doc.toprettyxml()
