@@ -167,7 +167,7 @@ class Map(object):
         if mode == "bbox":  # catch special case bbox
             sea = proj.bounding_geometry(data, projected=True)
             sbbox = geom_to_bbox(sea)
-            sbbox.inflate(sbbox.width * opts['bounds']['padding'])
+            sbbox.inflate(sbbox.width * data['padding'])
             return bbox_to_polygon(sbbox)
 
         bbox = BBox()
@@ -196,13 +196,13 @@ class Map(object):
                     bbox.join(fbbox)
                 # Save the unprojected bounding box for later to
                 # determine what features can be skipped.
-                ubbox.inflate(ubbox.width * opts['bounds']['padding'])
+                ubbox.inflate(ubbox.width * data['padding'])
                 self._unprojected_bounds = ubbox
             else:
                 raise KartographError('no features found for calculating the map bounds')
         # If we need some extra geometry around the map bounds, we inflate
         # the bbox according to the set *padding*.
-        bbox.inflate(bbox.width * opts['bounds']['padding'])
+        bbox.inflate(bbox.width * data['padding'])
         # At the end we convert the bounding box to a Polygon because
         # we need it for clipping tasks.
         return bbox_to_polygon(bbox)

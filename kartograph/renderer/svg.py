@@ -232,7 +232,11 @@ class SvgRenderer(MapRenderer):
     def _render_label(self, layer, feature, labelOpts):
         #if feature.geometry.area < 20:
         #    return
-        cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        try:
+            cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        except KartographError:
+            return
+
         key = labelOpts['key']
         if not key:
             key = feature.props.keys()[0]
@@ -454,7 +458,7 @@ def _add_attrs(node, attrs):
 
 
 def _get_label_position(geometry, pos):
-    if pos == 'centroid':
+    if pos == 'centroid' and not (geometry is None):
         pt = geometry.centroid
         return (pt.x, pt.y)
     else:
