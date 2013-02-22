@@ -161,7 +161,10 @@ class Map(object):
         proj = self.proj
         mode = opts['bounds']['mode'][:]
         data = opts['bounds']['data']
-        padding = opts['bounds']['padding']
+        if 'padding' not in opts['bounds']:
+            padding = 0
+        else
+            padding = opts['bounds']['padding']
 
         # If the bound mode is set to *bbox* we simply project
         # a rectangle in lat/lon coordinates.
