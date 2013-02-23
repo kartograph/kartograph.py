@@ -163,7 +163,7 @@ class Map(object):
         data = opts['bounds']['data']
         if 'padding' not in opts['bounds']:
             padding = 0
-        else
+        else:
             padding = opts['bounds']['padding']
 
         # If the bound mode is set to *bbox* we simply project
