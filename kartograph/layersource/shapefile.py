@@ -361,8 +361,7 @@ class Reader:
             # deleted record
             return None
         record = []
-        for (name, typ, size, deci), value in zip(self.fields,
-                                                                                                recordContents):
+        for (name, typ, size, deci), value in zip(self.fields, recordContents):
             if name == 'DeletionFlag':
                 continue
             elif not value.strip():
@@ -378,7 +377,8 @@ class Reader:
                     except:
                         value = 0
                 else:
-                    value = int(value)
+                    try:value = int(float(value))
+                    except: value = 0
             elif typ == b('D'):
                 try:
                     y, m, d = int(value[:4]), int(value[4:6]), int(value[6:8])
