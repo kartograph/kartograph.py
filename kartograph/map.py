@@ -1,4 +1,3 @@
-
 from shapely.geometry import Polygon
 from shapely.geometry.base import BaseGeometry
 from maplayer import MapLayer
@@ -383,7 +382,7 @@ class Map(object):
                         # Sometimes a bounding box may not exist, so get it
                         if not hasattr(crop_at.geom,'bbox'):
                             crop_at.geom.bbox = geom_to_bbox(crop_at.geom)
-                        if crop_at.geom.bbox().intersects(cbbox):
+                        if crop_at.geom.bbox.intersects(cbbox):
                             tocrop.crop_to(crop_at.geom)
                             cropped_features.append(tocrop)
                 layer.features = cropped_features
