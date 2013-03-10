@@ -414,9 +414,9 @@ class SvgDocument(object):
         if isinstance(outfile, (str, unicode)):
             outfile = open(outfile, 'w')
         if pretty_print:
-            raw = self.doc.toprettyxml()
+            raw = self.doc.toprettyxml('utf-8')
         else:
-            raw = self.doc.toxml()
+            raw = self.doc.toxml('utf-8')
         try:
             raw = raw.encode('utf-8')
         except:
