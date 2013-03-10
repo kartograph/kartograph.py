@@ -185,7 +185,7 @@ if __name__ == "__main__":
 }
 
 *[highway=primary] {
-    stroke-wigth: 4px;
+    stroke-width: 4px;
 }
 
 '''
