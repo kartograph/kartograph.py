@@ -218,6 +218,8 @@ def parse_layer_join(layer):
         join['groups'] = None
     if 'group-as' not in join:
         join['group-as'] = False
+    if 'export-ids' not in join:
+        join['export-ids'] = False
 
 
 def parse_layer_simplify(layer):
