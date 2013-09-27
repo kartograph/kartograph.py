@@ -488,6 +488,10 @@ class Map(object):
                     if 'attributes' in join:
                         attrs = join['attributes']
                         for key in attrs:
+                            if key not in layer.options['attributes']:
+                                # add key to layer attributes to ensure
+                                # that it's being included in SVG
+                                layer.options['attributes'].append({'src': key, 'tgt': key})
                             if isinstance(attrs[key], dict):
                                 if g_id in attrs[key]:
                                     props[key] = attrs[key][g_id]

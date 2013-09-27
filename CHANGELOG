@@ -1,12 +1,17 @@
 
 
-* Lots of refactoring
+0.6.7
+-----
+* always including additional group attributes
+
+0.6.6
+-----
+* lots of refactoring
 
 0.6.3
 -----
 * added pretty-printing
 
-// blackout
 
 0.2.2
 -----
