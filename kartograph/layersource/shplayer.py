@@ -138,7 +138,7 @@ class ShapefileLayer(LayerSource):
 def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=None):
     if shp is None:
         return None
-    if bbox:
+    if bbox and shp.shapeType != 1:
         if proj:
             left, top = proj(shp.bbox[0], shp.bbox[1], inverse=True)
             right, btm = proj(shp.bbox[2], shp.bbox[3], inverse=True)
@@ -153,6 +153,8 @@ def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=Non
         geom = shape2polygon(shp, ignore_holes=ignore_holes, min_area=min_area, proj=proj)
     elif shp.shapeType in (3, 13):  # line
         geom = shape2line(shp, proj=proj)
+    elif shp.shapeType == 1: # point
+        geom = shape2point(shp, proj=proj)
     else:
         raise KartographError('unknown shape type (%d)' % shp.shapeType)
     return geom
@@ -241,7 +243,17 @@ def shape2line(shp, proj=None):
     else:
         raise KartographError('shapefile import failed - no line found')
 
-
+def shape2point(shp, proj=None):
+    from shapely.geometry import MultiPoint, Point
+    points = shp.points[:]
+    if len(points) == 1:
+        return Point(points[0])
+    elif len(points) > 1:
+        return MultiPoint(points)
+    else:
+        raise KartographError('shapefile import failed - no points found')
+    
+  
 def project_coords(pts, proj):
     for i in range(len(pts)):
         x, y = proj(pts[i][0], pts[i][1], inverse=True)

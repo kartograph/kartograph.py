@@ -232,7 +232,11 @@ class SvgRenderer(MapRenderer):
     def _render_label(self, layer, feature, labelOpts):
         #if feature.geometry.area < 20:
         #    return
-        cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        try:
+            cx, cy = _get_label_position(feature.geometry, labelOpts['position'])
+        except KartographError:
+            return
+
         key = labelOpts['key']
         if not key:
             key = feature.props.keys()[0]
@@ -410,9 +414,9 @@ class SvgDocument(object):
         if isinstance(outfile, (str, unicode)):
             outfile = open(outfile, 'w')
         if pretty_print:
-            raw = self.doc.toprettyxml()
+            raw = self.doc.toprettyxml('utf-8')
         else:
-            raw = self.doc.toxml()
+            raw = self.doc.toxml('utf-8')
         try:
             raw = raw.encode('utf-8')
         except:
@@ -454,7 +458,7 @@ def _add_attrs(node, attrs):
 
 
 def _get_label_position(geometry, pos):
-    if pos == 'centroid':
+    if pos == 'centroid' and not (geometry is None):
         pt = geometry.centroid
         return (pt.x, pt.y)
     else:

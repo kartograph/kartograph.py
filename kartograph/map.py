@@ -1,4 +1,3 @@
-
 from shapely.geometry import Polygon
 from shapely.geometry.base import BaseGeometry
 from maplayer import MapLayer
@@ -161,13 +160,17 @@ class Map(object):
         proj = self.proj
         mode = opts['bounds']['mode'][:]
         data = opts['bounds']['data']
+        if 'padding' not in opts['bounds']:
+            padding = 0
+        else:
+            padding = opts['bounds']['padding']
 
         # If the bound mode is set to *bbox* we simply project
         # a rectangle in lat/lon coordinates.
         if mode == "bbox":  # catch special case bbox
             sea = proj.bounding_geometry(data, projected=True)
             sbbox = geom_to_bbox(sea)
-            sbbox.inflate(sbbox.width * opts['bounds']['padding'])
+            sbbox.inflate(sbbox.width * padding)
             return bbox_to_polygon(sbbox)
 
         bbox = BBox()
@@ -196,13 +199,13 @@ class Map(object):
                     bbox.join(fbbox)
                 # Save the unprojected bounding box for later to
                 # determine what features can be skipped.
-                ubbox.inflate(ubbox.width * opts['bounds']['padding'])
+                ubbox.inflate(ubbox.width * padding)
                 self._unprojected_bounds = ubbox
             else:
                 raise KartographError('no features found for calculating the map bounds')
         # If we need some extra geometry around the map bounds, we inflate
         # the bbox according to the set *padding*.
-        bbox.inflate(bbox.width * opts['bounds']['padding'])
+        bbox.inflate(bbox.width * padding)
         # At the end we convert the bounding box to a Polygon because
         # we need it for clipping tasks.
         return bbox_to_polygon(bbox)
@@ -379,7 +382,7 @@ class Map(object):
                         # Sometimes a bounding box may not exist, so get it
                         if not hasattr(crop_at.geom,'bbox'):
                             crop_at.geom.bbox = geom_to_bbox(crop_at.geom)
-                        if crop_at.geom.bbox().intersects(cbbox):
+                        if crop_at.geom.bbox.intersects(cbbox):
                             tocrop.crop_to(crop_at.geom)
                             cropped_features.append(tocrop)
                 layer.features = cropped_features

@@ -31,9 +31,12 @@ class Feature:
 
     def crop_to(self, geometry):
         if self.geometry:
-            if self.geometry.is_valid:
+            if self.geometry.is_valid and geometry.is_valid:
                 if self.geometry.intersects(geometry):
-                    self.geometry = self.geometry.intersection(geometry)
+                    try:
+                        self.geometry = self.geometry.intersection(geometry)
+                    except TopologicalError:
+                        self.geometry = None
                 else:
                     self.geometry = None
             else:

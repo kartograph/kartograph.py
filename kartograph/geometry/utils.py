@@ -29,7 +29,7 @@ def bbox_to_polygon(bbox):
 def geom_to_bbox(geom, min_area=0):
     from kartograph.geometry import BBox
     from shapely.geometry import MultiPolygon
-    if True or min_area == 0 or not isinstance(geom, MultiPolygon):
+    if min_area == 0 or not isinstance(geom, MultiPolygon):
         # if no minimum area ratio is set or the geometry
         # is not a multipart geometry, we simply use the
         # full bbox
