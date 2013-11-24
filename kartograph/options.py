@@ -98,7 +98,7 @@ def parse_layers(opts):
     if isinstance(opts['layers'], list):
         for layer in opts['layers']:
             layers.append(layer)
-    elif isinstance(opts['layers'], OrderedDict):
+    elif isinstance(opts['layers'], (dict, OrderedDict)):
         for layer_id in opts['layers']:
             layer = opts['layers'][layer_id]
             layer['id'] = layer_id
