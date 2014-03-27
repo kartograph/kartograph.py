@@ -1,4 +1,8 @@
 
+0.6.8
+-----
+* added special projection for USA maps incl Alaska & Hawaii
+* bugfix postgis layer
 
 0.6.7
 -----
