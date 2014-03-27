@@ -55,6 +55,47 @@ class LAEA(Azimuthal):
         return (x, y)
 
 
+class LAEA_Alaska(LAEA):
+    def __init__(self, lon0=0, lat0=0):
+        self.scale = math.sqrt(2) * 0.5 * 0.33
+        Azimuthal.__init__(self, 90, -150)
+
+class LAEA_Hawaii(LAEA):
+    def __init__(self, lon0=0, lat0=0):
+        self.scale = math.sqrt(2) * 0.5
+        Azimuthal.__init__(self, 20, -157)
+
+
+class LAEA_USA(LAEA):
+
+    def __init__(self, lon0=0.0, lat0=0.0):
+        self.scale = math.sqrt(2) * 0.5
+        Azimuthal.__init__(self, 45, -100)
+        self.LAEA_Alaska = LAEA_Alaska()
+        self.LAEA_Hawaii = LAEA_Hawaii()
+
+    def project(self, lon, lat):
+        alaska = lat > 44 and (lon < -127 or lon > 170)
+        hawaii = lon < -127 and lat < 44
+
+        if alaska:
+            if lon > 170:
+                lon -= 380
+            x,y = self.LAEA_Alaska.project(lon, lat)
+        elif hawaii:
+            x,y = self.LAEA_Hawaii.project(lon, lat)
+        else:
+            x,y = LAEA.project(self, lon, lat)
+
+        if alaska:
+            x += -180
+            y += 100
+        if hawaii:
+            y += 220
+            x += -80
+        return (x,y)
+
+
 class P4_LAEA(Azimuthal):
     """
     Lambert Azimuthal Equal-Area Projection

@@ -51,6 +51,7 @@ from azimuthal import *
 
 projections['ortho'] = Orthographic
 projections['laea'] = LAEA
+projections['laea-usa'] = LAEA_USA
 projections['p4.laea'] = P4_LAEA
 projections['stereo'] = Stereographic
 projections['satellite'] = Satellite
