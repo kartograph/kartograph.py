@@ -6,7 +6,7 @@ Open Source Python library for generating SVG maps from shapefiles and postgis.
 
 setup(
     name='kartograph.py',
-    version='0.6.7',
+    version='0.6.8',
     description="Open Source Python library for generating semantic SVG maps",
     long_description=long_desc,
     classifiers=[
