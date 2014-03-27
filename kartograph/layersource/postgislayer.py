@@ -50,7 +50,7 @@ class PostGISLayer(LayerSource):
             # Check for intersection with bounding box
             bbox_coords = (bbox[0], bbox[2], bbox[1], bbox[2], bbox[1], bbox[3], bbox[0], bbox[3], bbox[0], bbox[2])
             bbox_poly = 'POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))' % bbox_coords
-            query = "(%s) AND ST_Intersects( way, ST_SetSRID(ST_GeomFromEWKT('%s'), 4326) )" % (query, bbox_poly)
+            query = "(%s) AND ST_Intersects( %s, ST_SetSRID(ST_GeomFromEWKT('%s'), 4326) )" % (query, self.geom_col, bbox_poly)
 
         # print "reading from postgis database / " + self.query
 
