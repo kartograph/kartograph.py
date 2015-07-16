@@ -1,10 +1,13 @@
 # Kartograph.py
 
-As you probably already guessed from the commit history in this repo, Kartograph.py is not maintained any more, which means that bugs are not being fixed and new features are not being added anymore. The original maintainer decided to move on with his life. 
 
-Bummer, I know! But there is a great alternative!
+*Sad update:*
 
-I highly recommend using [mapshaper](https://github.com/mbloch/mapshaper) instead. mapshaper provides more features, runs a lot faster and, being a node package, mapshaper is much easier to install than kartograph.py ever was. The only thing mapshaper can't do (yet) is saving geo vectors as SVG file. But there are tons of other ways to do that.
+As you probably already guessed from the commit history in this repo, Kartograph.py is **not maintained**, which means that bugs are not being fixed and new features are not being added anymore. The original maintainer decided to move on with his life. 
+
+Bummer, I know! But... there is a great alternative!
+
+I highly recommend using [mapshaper](https://github.com/mbloch/mapshaper) instead. Mapshaper provides more features, runs a lot faster and, being a node package, mapshaper is much easier to install than kartograph.py ever was. The only thing mapshaper can't do (yet) is saving geo vectors as SVG file. But there are tons of other ways to do that.
 
 Of course, if anyone wants to take over, kartograph.py is all yours.
 
