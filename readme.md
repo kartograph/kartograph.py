@@ -1,18 +1,16 @@
-# Kartograph.py
-
-
-*Sad update:*
+## Kartograph is not maintained anymore
 
 As you probably already guessed from the commit history in this repo, Kartograph.py is **not maintained**, which means that bugs are not being fixed and new features are not being added anymore. The original maintainer decided to move on with his life. 
 
 Bummer, I know! But... there is a great alternative!
 
-I highly recommend using [mapshaper](https://github.com/mbloch/mapshaper) instead. Mapshaper provides more features, runs a lot faster and, being a node package, mapshaper is much easier to install than kartograph.py ever was. The only thing mapshaper can't do (yet) is saving geo vectors as SVG file. But there are tons of other ways to do that.
+I highly recommend using [mapshaper](https://github.com/mbloch/mapshaper) instead, either the web gui or via command-line. It's what I use for all my mapping needs nowadays.
 
 Of course, if anyone wants to take over, kartograph.py is all yours.
 
-
 ---------
+
+# Kartograph.py
 
 Kartograph is a Python library that generates SVG maps from ESRI shapefiles. Please have a look at the [API docs](https://github.com/kartograph/kartograph.py/wiki/API) for more details.
 
